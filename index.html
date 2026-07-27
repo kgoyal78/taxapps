@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Income Tax Calculators</title>
+<meta name="theme-color" content="#4f46e5">
+<style>
+  :root{
+    --bg:#f4f5fb; --card:#fff; --ink:#1c1e2a; --muted:#5b6072;
+    --border:#e6e8f0; --shadow:0 6px 24px rgba(30,33,60,.08);
+    --in:#4f46e5; --us:#2563eb;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{ --bg:#12141c; --card:#1b1e29; --ink:#eef0f7; --muted:#a0a5b8;
+           --border:#2a2e3d; --shadow:0 6px 24px rgba(0,0,0,.35); }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;background:var(--bg);color:var(--ink);
+       font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+       display:flex;flex-direction:column;align-items:center;padding:48px 20px;gap:8px}
+  h1{font-size:1.9rem;margin:.2em 0 0;text-align:center}
+  p.sub{color:var(--muted);margin:.3em 0 1.6em;text-align:center;max-width:34rem}
+  .grid{display:grid;gap:20px;width:100%;max-width:720px;grid-template-columns:1fr 1fr}
+  @media (max-width:560px){.grid{grid-template-columns:1fr}}
+  a.card{display:flex;flex-direction:column;gap:10px;background:var(--card);
+    border:1px solid var(--border);border-radius:18px;padding:26px 24px;
+    text-decoration:none;color:inherit;box-shadow:var(--shadow);
+    transition:transform .15s ease, box-shadow .15s ease}
+  a.card:hover{transform:translateY(-3px);box-shadow:0 12px 32px rgba(30,33,60,.14)}
+  .flag{font-size:2.2rem;line-height:1}
+  .card h2{margin:.1em 0;font-size:1.2rem}
+  .card span{color:var(--muted);font-size:.92rem}
+  .tag{display:inline-block;margin-top:6px;font-size:.72rem;font-weight:600;
+    padding:3px 9px;border-radius:999px;color:#fff;width:max-content}
+  .india .tag{background:var(--in)} .usa .tag{background:var(--us)}
+  footer{margin-top:34px;color:var(--muted);font-size:.8rem;text-align:center;max-width:36rem}
+</style>
+</head>
+<body>
+  <h1>Income Tax Calculators</h1>
+  <p class="sub">Guided, mobile‑installable estimators. Your data stays on your device — nothing is uploaded.</p>
+  <div class="grid">
+    <a class="card india" href="./india/index.html">
+      <div class="flag">🇮🇳</div>
+      <h2>India Individual Income Tax</h2>
+      <span>Old vs New regime · AY 2024‑25 → 2026‑27 · all income heads &amp; deductions</span>
+      <span class="tag">Guided + suggestions</span>
+    </a>
+    <a class="card usa" href="./usa/index.html">
+      <div class="flag">🇺🇸</div>
+      <h2>US Federal + Indiana State</h2>
+      <span>1040 + Indiana return · tax years 2023–2025 · brackets, credits, county tax</span>
+      <span class="tag">Guided + suggestions</span>
+    </a>
+  </div>
+  <footer>Educational estimators only — not a substitute for official e‑filing (Income Tax portal / IRS / Indiana DOR) or advice from a qualified CA / CPA / EA. Verify all figures.</footer>
+</body>
+</html>

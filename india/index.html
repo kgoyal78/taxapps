@@ -1,0 +1,1373 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>India Income Tax Calculator</title>
+<meta name="theme-color" content="#4f46e5">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="India Tax">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<style>
+  :root{
+    --bg:#f4f6fb; --card:#ffffff; --ink:#1b2130; --muted:#5c6579; --line:#e2e6ef;
+    --brand:#4f46e5; --brand2:#6366f1; --brand-ink:#ffffff; --good:#0a7d33; --bad:#c0392b;
+    --warn:#b7791f; --warnbg:#fff8e6;
+    --accent:#eef2ff; --shadow:0 1px 3px rgba(20,30,60,.08),0 8px 24px rgba(20,30,60,.06);
+    --radius:14px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0f1420; --card:#171d2b; --ink:#e8ecf6; --muted:#9aa6bd; --line:#28303f;
+      --brand:#7c83ff; --brand2:#8b90ff; --brand-ink:#0a0f1c; --good:#4cd07a; --bad:#ff6b5e;
+      --warn:#e8c26a; --warnbg:#2a2410;
+      --accent:#1c2440; --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg); color:var(--ink); line-height:1.45; font-size:15px;
+    -webkit-text-size-adjust:100%;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:16px 16px 120px}
+  h1{font-size:1.35rem;margin:.2rem 0}
+  h2{font-size:1.02rem;margin:0}
+  .sub{color:var(--muted);font-size:.85rem;margin-top:2px}
+
+  /* header controls */
+  .apphead{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:6px}
+  .headbtns{display:flex;gap:8px;flex-wrap:wrap}
+  .hbtn{font:inherit;font-weight:600;font-size:.82rem;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:8px 12px;border-radius:10px;cursor:pointer;min-height:40px}
+  .hbtn.accent{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
+  .hbtn.ghost{background:transparent}
+
+  .disclaimer{
+    background:var(--warnbg);color:var(--warn);border:1px solid var(--line);border-radius:12px;
+    padding:11px 13px;margin:10px 0 14px;font-size:.82rem;
+  }
+
+  /* progress */
+  #progressWrap{margin:6px 0 14px}
+  .pbar{height:9px;border-radius:20px;background:var(--line);overflow:hidden}
+  .pfill{height:100%;background:linear-gradient(90deg,var(--brand),var(--brand2));width:11%;transition:width .3s ease}
+  .pmeta{display:flex;justify-content:space-between;font-size:.78rem;color:var(--muted);margin-top:6px}
+  .pmeta strong{color:var(--ink)}
+
+  /* mini summary sticky */
+  #miniSummary{position:sticky;top:0;z-index:15;display:flex;justify-content:space-between;align-items:center;
+    background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:12px;
+    padding:10px 14px;margin-bottom:12px;font-size:.9rem}
+  #miniSummary strong{font-size:1.15rem;color:var(--brand)}
+
+  .layout{display:grid;grid-template-columns:1fr 360px;gap:20px;align-items:start}
+  @media (max-width:920px){.layout{grid-template-columns:1fr}}
+  #mainLayout[data-mode="wizard"]{grid-template-columns:1fr}
+  #mainLayout[data-mode="wizard"] .results{display:none}
+  #mainLayout[data-mode="wizard"] .step{display:none}
+  #mainLayout[data-mode="wizard"] .step.active{display:block}
+  #mainLayout[data-mode="single"] .step{display:block;margin-bottom:14px}
+  #mainLayout[data-mode="single"] #progressWrap,
+  #mainLayout[data-mode="single"] #miniSummary,
+  #mainLayout[data-mode="single"] #wizNav{display:none}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+  .step{margin-bottom:14px}
+  .body{padding:14px 16px 18px}
+  .step-title{font-size:1.08rem;margin:0 0 4px;display:flex;align-items:center;gap:8px}
+  .step-num{font-size:.7rem;font-weight:700;color:var(--brand);background:var(--accent);border:1px solid var(--line);border-radius:20px;padding:2px 9px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px}
+  @media (max-width:560px){.grid{grid-template-columns:1fr}}
+  .field{display:flex;flex-direction:column;gap:5px;margin:6px 0}
+  .field label{font-size:.82rem;color:var(--muted);display:flex;align-items:center;flex-wrap:wrap}
+  .field .help{font-size:.72rem;color:var(--muted);opacity:.85}
+  input,select{
+    font:inherit;padding:11px 12px;border:1px solid var(--line);border-radius:10px;
+    background:var(--bg);color:var(--ink);width:100%;min-height:44px;
+  }
+  input:focus,select:focus{outline:2px solid var(--brand);outline-offset:0;border-color:var(--brand)}
+  input[readonly]{opacity:.7;cursor:not-allowed}
+  input.bad{border-color:var(--bad);outline-color:var(--bad)}
+  .toprow{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px}
+  @media (max-width:560px){.toprow{grid-template-columns:1fr}}
+  .badge{display:inline-block;font-size:.62rem;padding:1px 6px;border-radius:20px;background:var(--accent);color:var(--brand);border:1px solid var(--line);margin-left:6px;vertical-align:middle}
+  .muted-note{font-size:.78rem;color:var(--muted);margin:2px 0 12px}
+  .subtotal{display:flex;justify-content:space-between;padding:10px 12px;background:var(--accent);border-radius:10px;font-weight:600;margin-top:8px}
+  .propblock{border:1px dashed var(--line);border-radius:10px;padding:10px 12px;margin:10px 0}
+  .propblock h4{margin:2px 0 6px;font-size:.84rem}
+
+  /* tooltip affordance */
+  .tip{display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;min-width:17px;
+    border-radius:50%;background:var(--accent);color:var(--brand);border:1px solid var(--line);
+    font-size:.66rem;font-weight:700;cursor:help;margin-left:6px;position:relative;vertical-align:middle}
+  .tip:focus{outline:2px solid var(--brand);outline-offset:1px}
+  .tip::after{content:attr(data-tip);position:absolute;left:50%;bottom:150%;transform:translateX(-50%);
+    background:var(--ink);color:var(--bg);padding:8px 10px;border-radius:9px;font-size:.72rem;font-weight:400;
+    width:220px;max-width:60vw;line-height:1.4;box-shadow:var(--shadow);opacity:0;pointer-events:none;
+    transition:opacity .15s;z-index:40;text-align:left}
+  .tip:hover::after,.tip:focus::after{opacity:1}
+
+  /* wizard nav */
+  #wizNav{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;gap:10px;
+    padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:var(--card);
+    border-top:1px solid var(--line);box-shadow:0 -6px 24px rgba(20,30,60,.08)}
+  #wizNav .navinner{max-width:1180px;margin:0 auto;display:flex;gap:10px;width:100%}
+  .navbtn{font:inherit;font-weight:700;border:1px solid var(--line);background:var(--card);color:var(--ink);
+    padding:13px 16px;border-radius:11px;cursor:pointer;min-height:48px;flex:1}
+  .navbtn.primary{background:var(--brand);color:var(--brand-ink);border-color:var(--brand);flex:2}
+  .navbtn:disabled{opacity:.4;cursor:not-allowed}
+
+  /* results panel */
+  .results{position:sticky;top:14px}
+  .rescard{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:14px}
+  .rrow{display:flex;justify-content:space-between;gap:10px;padding:5px 0;font-size:.86rem;border-bottom:1px dashed var(--line)}
+  .rrow:last-child{border-bottom:0}
+  .rrow.big{font-size:1.05rem;font-weight:700;border-bottom:0;padding-top:10px}
+  .rrow .lbl{color:var(--muted)}
+  .pill{padding:11px 12px;border-radius:10px;text-align:center;font-weight:700;margin-top:10px}
+  .pill.refund{background:rgba(10,125,51,.12);color:var(--good)}
+  .pill.payable{background:rgba(192,57,43,.12);color:var(--bad)}
+  .cmp{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
+  .cmpcol{border:1px solid var(--line);border-radius:11px;padding:10px}
+  .cmpcol.win{border-color:var(--good);box-shadow:0 0 0 2px rgba(10,125,51,.18)}
+  .cmpcol h3{margin:0 0 6px;font-size:.85rem;display:flex;justify-content:space-between;align-items:center}
+  .cmpcol .amt{font-size:1.1rem;font-weight:800}
+  .reco{margin-top:10px;padding:10px;border-radius:10px;background:var(--accent);font-size:.84rem}
+  .btns{display:flex;gap:8px;margin-top:12px}
+  .btns button{font:inherit;font-weight:600;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:11px 12px;border-radius:10px;cursor:pointer;flex:1;min-height:44px}
+  .btns button.primary{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
+
+  /* suggestions */
+  .sugg-head{font-size:1rem;font-weight:700;margin:16px 0 8px;display:flex;align-items:center;gap:8px}
+  .sugg-card{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:12px;
+    padding:11px 12px;margin:8px 0;background:var(--card)}
+  .sugg-card .ic{font-size:1.15rem;line-height:1.3;flex:none}
+  .sugg-card .msg{font-size:.86rem}
+  .sugg-card .impact{font-size:.8rem;color:var(--brand);font-weight:700;margin-top:3px}
+  .sugg-card.good{border-color:rgba(10,125,51,.4)}
+  .sugg-card.warn{border-color:rgba(183,121,31,.5)}
+  .sugg-none{font-size:.85rem;color:var(--muted);padding:6px 2px}
+  .sugg-disc{font-size:.74rem;color:var(--muted);margin-top:10px;font-style:italic}
+
+  /* validation */
+  #valBadge{cursor:pointer;border:1px solid var(--line);border-radius:20px;padding:6px 12px;font-size:.8rem;font-weight:700;background:var(--card);color:var(--ink);min-height:36px}
+  #valBadge.hasissues{background:rgba(192,57,43,.12);color:var(--bad);border-color:rgba(192,57,43,.4)}
+  #valBadge.ok{background:rgba(10,125,51,.12);color:var(--good);border-color:rgba(10,125,51,.35)}
+  .val-item{display:flex;gap:9px;align-items:flex-start;font-size:.84rem;padding:8px 0;border-bottom:1px dashed var(--line)}
+  .val-item:last-child{border-bottom:0}
+  .val-item .ic{flex:none}
+  #valPanelWrap{max-width:1180px;margin:0 auto 12px}
+  #valPanel{border:1px solid var(--line);border-radius:12px;background:var(--card);box-shadow:var(--shadow);padding:6px 14px}
+
+  @media print{
+    body{background:#fff;color:#000;font-size:12px}
+    .no-print,#wizNav,#progressWrap,#miniSummary,.headbtns,#valPanelWrap{display:none!important}
+    #mainLayout[data-mode="wizard"] .step{display:block!important}
+    #mainLayout{display:block!important}
+    .results{position:static}
+    .rescard,.card{border:1px solid #ccc;box-shadow:none;page-break-inside:avoid}
+    input,select{border:1px solid #ccc;background:#fff;color:#000}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="apphead no-print">
+    <div>
+      <h1>India Individual Income Tax Calculator</h1>
+      <div class="sub">Guided &middot; Old &amp; New regime &middot; AY 2024-25 / 2025-26 / 2026-27</div>
+    </div>
+    <div class="headbtns">
+      <button class="hbtn" id="valBadge" type="button">Checks</button>
+      <button class="hbtn ghost" id="viewToggle" type="button">Switch to single-page view</button>
+      <button class="hbtn accent" id="installBtn" type="button" style="display:none">📲 Install app</button>
+      <button class="hbtn ghost" id="resetBtn" type="button">Reset</button>
+    </div>
+  </div>
+
+  <div id="valPanelWrap" style="display:none"><div id="valPanel" class="validation-target"></div></div>
+
+  <div class="disclaimer">
+    <strong>Disclaimer:</strong> This is an estimator for educational use only. It is not a substitute for official
+    e-filing on the Income Tax portal or advice from a qualified Chartered Accountant. Verify all figures.
+    FY 2025-26 (AY 2026-27) figures reflect Budget 2025 and may be subject to change.
+  </div>
+
+  <div id="progressWrap" class="no-print">
+    <div class="pbar"><div class="pfill" id="pfill"></div></div>
+    <div class="pmeta"><span>Step <strong id="pstepNow">1</strong> of <strong id="pstepTot">9</strong> — <span id="pstepName">Filing details</span></span><span id="ppct">11%</span></div>
+  </div>
+
+  <div id="miniSummary" class="no-print"><span>Estimated tax</span><strong>₹0</strong></div>
+
+  <div class="layout" id="mainLayout" data-mode="wizard">
+    <!-- ============ LEFT: INPUTS (wizard steps) ============ -->
+    <div id="inputs">
+
+      <!-- STEP 1 — A. Filing details -->
+      <section class="step card active" data-step="1" data-name="Filing details">
+        <div class="body">
+          <h2 class="step-title"><span class="step-num">A</span>Filing details</h2>
+          <div class="muted-note">Choose Assessment Year, status and tax regime. Everything recalculates live.</div>
+          <div class="toprow">
+            <div class="field">
+              <label for="ay">Assessment Year <span class="tip" tabindex="0" role="button" aria-label="help" title="The year you file for. AY 2026-27 covers income earned in FY 2025-26." data-tip="The year you file for. AY 2026-27 covers income earned in FY 2025-26.">?</span></label>
+              <select id="ay">
+                <option value="2026-27" selected>AY 2026-27 (FY 2025-26)</option>
+                <option value="2025-26">AY 2025-26 (FY 2024-25)</option>
+                <option value="2024-25">AY 2024-25 (FY 2023-24)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="status">Residential status <span class="tip" tabindex="0" role="button" aria-label="help" title="Resident, RNOR or NRI — this affects which income is taxable and rebate eligibility." data-tip="Resident, RNOR or NRI — this affects which income is taxable and rebate eligibility.">?</span></label>
+              <select id="status">
+                <option value="resident">Resident</option>
+                <option value="rnor">Resident but Not Ordinarily Resident (RNOR)</option>
+                <option value="nri">Non-resident (NRI)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="age">Age category <span class="badge">Old regime exemption</span> <span class="tip" tabindex="0" role="button" aria-label="help" title="Seniors get a higher basic-exemption limit under the Old regime only." data-tip="Seniors get a higher basic-exemption limit under the Old regime only.">?</span></label>
+              <select id="age">
+                <option value="below60">Below 60</option>
+                <option value="senior">Senior (60 – 80)</option>
+                <option value="super">Super senior (80+)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="regime">Tax regime <span class="tip" tabindex="0" role="button" aria-label="help" title="New regime has lower rates but few deductions. Old regime allows deductions like 80C, HRA. 'Compare' picks the cheaper." data-tip="New regime has lower rates but few deductions. Old regime allows deductions like 80C, HRA. 'Compare' picks the cheaper.">?</span></label>
+              <select id="regime">
+                <option value="compare" selected>Compare both — recommend cheaper</option>
+                <option value="new">New regime</option>
+                <option value="old">Old regime</option>
+              </select>
+            </div>
+          </div>
+          <div class="muted-note" id="nriNote"></div>
+        </div>
+      </section>
+
+      <!-- STEP 2 — B. Salary -->
+      <section class="step card" data-step="2" data-name="Salary">
+        <div class="body">
+          <h2 class="step-title"><span class="step-num">B</span>Salary — Schedule S</h2>
+          <div class="grid">
+            <div class="field"><label>Gross salary (before exemptions) <span class="tip" tabindex="0" role="button" aria-label="help" title="Total salary from Form 16 before subtracting any exemptions or the standard deduction." data-tip="Total salary from Form 16 before subtracting any exemptions or the standard deduction.">?</span></label><input type="number" inputmode="numeric" id="grossSalary" min="0" placeholder="0"></div>
+            <div class="field oldonly"><label>Professional tax paid u/s 16 <span class="badge">Old only</span> <span class="tip" tabindex="0" role="button" aria-label="help" title="State professional tax deducted from salary. Deductible in the Old regime only." data-tip="State professional tax deducted from salary. Deductible in the Old regime only.">?</span></label><input type="number" inputmode="numeric" id="profTax" min="0" placeholder="0"></div>
+          </div>
+
+          <div class="propblock oldonly">
+            <h4>HRA exemption sub-calculator <span class="badge">Old only</span> <span class="tip" tabindex="0" role="button" aria-label="help" title="Exempt HRA is the least of: HRA received, rent minus 10% of Basic+DA, and 50%/40% of Basic+DA." data-tip="Exempt HRA is the least of: HRA received, rent minus 10% of Basic+DA, and 50%/40% of Basic+DA.">?</span></h4>
+            <div class="grid">
+              <div class="field"><label>Basic + DA (annual)</label><input type="number" inputmode="numeric" id="hraBasic" min="0" placeholder="0"></div>
+              <div class="field"><label>HRA received (annual)</label><input type="number" inputmode="numeric" id="hraReceived" min="0" placeholder="0"></div>
+              <div class="field"><label>Total rent paid (annual)</label><input type="number" inputmode="numeric" id="hraRent" min="0" placeholder="0"></div>
+              <div class="field"><label>Metro city (Delhi/Mumbai/Kolkata/Chennai)?</label>
+                <select id="hraMetro"><option value="yes">Yes (50%)</option><option value="no" selected>No (40%)</option></select></div>
+            </div>
+            <div class="subtotal"><span>Exempt HRA</span><span id="hraExemptOut">₹0</span></div>
+          </div>
+
+          <div class="grid oldonly">
+            <div class="field"><label>LTA exempt <span class="badge">Old only</span> <span class="tip" tabindex="0" role="button" aria-label="help" title="Leave Travel Allowance exemption for travel within India. Old regime only." data-tip="Leave Travel Allowance exemption for travel within India. Old regime only.">?</span></label><input type="number" inputmode="numeric" id="lta" min="0" placeholder="0"></div>
+            <div class="field"><label>Other exempt allowances <span class="badge">Old only</span> <span class="tip" tabindex="0" role="button" aria-label="help" title="Any other exempt salary allowances (e.g. certain reimbursements). Old regime only." data-tip="Any other exempt salary allowances (e.g. certain reimbursements). Old regime only.">?</span></label><input type="number" inputmode="numeric" id="otherExempt" min="0" placeholder="0"></div>
+          </div>
+
+          <div class="subtotal"><span>Standard deduction (auto per regime)</span><span id="stdDedOut">₹0</span></div>
+          <div class="subtotal"><span>Income from Salary</span><span id="salaryOut">₹0</span></div>
+        </div>
+      </section>
+
+      <!-- STEP 3 — C. House property -->
+      <section class="step card" data-step="3" data-name="House Property">
+        <div class="body">
+          <h2 class="step-title"><span class="step-num">C</span>House Property — Schedule HP</h2>
+          <div class="muted-note">Self-occupied loan interest capped at ₹2,00,000. Overall HP loss set-off against other heads capped at ₹2,00,000. New regime: self-occupied interest not allowed and HP loss cannot be set off.</div>
+          <div class="propblock">
+            <h4>Property 1</h4>
+            <div class="grid">
+              <div class="field"><label>Type <span class="tip" tabindex="0" role="button" aria-label="help" title="Self-occupied = you live in it (no rent). Let-out = rented out." data-tip="Self-occupied = you live in it (no rent). Let-out = rented out.">?</span></label><select id="hp1type"><option value="sop">Self-occupied</option><option value="let">Let-out</option></select></div>
+              <div class="field"><label>Annual rent received</label><input type="number" inputmode="numeric" id="hp1rent" min="0" placeholder="0"></div>
+              <div class="field"><label>Municipal taxes paid</label><input type="number" inputmode="numeric" id="hp1mun" min="0" placeholder="0"></div>
+              <div class="field"><label>Home loan interest u/s 24(b) <span class="tip" tabindex="0" role="button" aria-label="help" title="Interest on your home loan. Capped at ₹2,00,000 for a self-occupied house." data-tip="Interest on your home loan. Capped at ₹2,00,000 for a self-occupied house.">?</span></label><input type="number" inputmode="numeric" id="hp1int" min="0" placeholder="0"></div>
+            </div>
+          </div>
+          <div class="propblock">
+            <h4>Property 2</h4>
+            <div class="grid">
+              <div class="field"><label>Type</label><select id="hp2type"><option value="none" selected>— none —</option><option value="sop">Self-occupied</option><option value="let">Let-out</option></select></div>
+              <div class="field"><label>Annual rent received</label><input type="number" inputmode="numeric" id="hp2rent" min="0" placeholder="0"></div>
+              <div class="field"><label>Municipal taxes paid</label><input type="number" inputmode="numeric" id="hp2mun" min="0" placeholder="0"></div>
+              <div class="field"><label>Home loan interest u/s 24(b)</label><input type="number" inputmode="numeric" id="hp2int" min="0" placeholder="0"></div>
+            </div>
+          </div>
+          <div class="subtotal"><span>Net Income from House Property</span><span id="hpOut">₹0</span></div>
+        </div>
+      </section>
+
+      <!-- STEP 4 — D. Capital gains -->
+      <section class="step card" data-step="4" data-name="Capital Gains">
+        <div class="body">
+          <h2 class="step-title"><span class="step-num">D</span>Capital Gains — Schedule CG</h2>
+          <div class="muted-note">Rate-change caveat: for transfers <strong>on/after 23-Jul-2024</strong> equity STCG (111A) is 20% (was 15%) and equity LTCG (112A) is 12.5% (was 10%). LTCG 112A exemption: ₹1,25,000 (AY 2025-26+), else ₹1,00,000.</div>
+          <div class="grid">
+            <div class="field"><label id="cgPeriodLbl">Equity transfer period <span class="tip" tabindex="0" role="button" aria-label="help" title="When you sold equity. Rates changed on 23-Jul-2024." data-tip="When you sold equity. Rates changed on 23-Jul-2024.">?</span></label>
+              <select id="cgPeriod"><option value="post">On/after 23-Jul-2024</option><option value="pre">Before 23-Jul-2024</option></select>
+              <span class="help" id="cgPeriodHelp"></span></div>
+            <div class="field"><label>Equity STCG u/s 111A (STT-paid) <span class="tip" tabindex="0" role="button" aria-label="help" title="Short-term gains on listed shares/equity funds held ≤12 months, taxed at a flat special rate." data-tip="Short-term gains on listed shares/equity funds held ≤12 months, taxed at a flat special rate.">?</span></label><input type="number" inputmode="numeric" id="stcg111a" min="0" placeholder="0"></div>
+            <div class="field"><label>Equity LTCG u/s 112A (before exemption) <span class="tip" tabindex="0" role="button" aria-label="help" title="Long-term gains on listed equity held >12 months. First ₹1.25L (or ₹1L) is exempt." data-tip="Long-term gains on listed equity held >12 months. First ₹1.25L (or ₹1L) is exempt.">?</span></label><input type="number" inputmode="numeric" id="ltcg112a" min="0" placeholder="0"></div>
+            <div class="field"><label>Other short-term gains (taxed at slab)</label><input type="number" inputmode="numeric" id="stcgOther" min="0" placeholder="0"></div>
+            <div class="field"><label>Other long-term gains (taxed at 20%)</label><input type="number" inputmode="numeric" id="ltcgOther" min="0" placeholder="0"></div>
+          </div>
+          <div class="subtotal"><span>LTCG 112A exemption applied</span><span id="ltcgExemptOut">₹0</span></div>
+        </div>
+      </section>
+
+      <!-- STEP 5 — E. Business -->
+      <section class="step card" data-step="5" data-name="Business / Profession">
+        <div class="body">
+          <h2 class="step-title"><span class="step-num">E</span>Business / Profession — Schedule BP</h2>
+          <div class="grid">
+            <div class="field"><label>Net profit (normal books) <span class="tip" tabindex="0" role="button" aria-label="help" title="Net profit from your regular books of account (income minus expenses)." data-tip="Net profit from your regular books of account (income minus expenses).">?</span></label><input type="number" inputmode="numeric" id="bpNet" min="0" placeholder="0"></div>
+          </div>
+          <div class="propblock">
+            <h4>Presumptive 44AD (business) <span class="tip" tabindex="0" role="button" aria-label="help" title="Small businesses may declare profit as 6% (digital) or 8% (cash) of turnover instead of keeping books." data-tip="Small businesses may declare profit as 6% (digital) or 8% (cash) of turnover instead of keeping books.">?</span></h4>
+            <div class="grid">
+              <div class="field"><label>Turnover received digitally (@6%)</label><input type="number" inputmode="numeric" id="ad44Digital" min="0" placeholder="0"></div>
+              <div class="field"><label>Turnover received in cash (@8%)</label><input type="number" inputmode="numeric" id="ad44Cash" min="0" placeholder="0"></div>
+            </div>
+            <div class="subtotal"><span>Deemed profit 44AD</span><span id="ad44Out">₹0</span></div>
+          </div>
+          <div class="propblock">
+            <h4>Presumptive 44ADA (profession) <span class="tip" tabindex="0" role="button" aria-label="help" title="Eligible professionals may declare 50% of gross receipts as profit." data-tip="Eligible professionals may declare 50% of gross receipts as profit.">?</span></h4>
+            <div class="grid">
+              <div class="field"><label>Gross receipts (@50%)</label><input type="number" inputmode="numeric" id="ada44Gross" min="0" placeholder="0"></div>
+            </div>
+            <div class="subtotal"><span>Deemed profit 44ADA</span><span id="ada44Out">₹0</span></div>
+          </div>
+          <div class="subtotal"><span>Income from Business / Profession</span><span id="bpOut">₹0</span></div>
+        </div>
+      </section>
+
+      <!-- STEP 6 — F. Other sources -->
+      <section class="step card" data-step="6" data-name="Other Sources">
+        <div class="body">
+          <h2 class="step-title"><span class="step-num">F</span>Income from Other Sources</h2>
+          <div class="grid">
+            <div class="field"><label>Savings account interest <span class="tip" tabindex="0" role="button" aria-label="help" title="Interest from bank savings accounts. May qualify for the 80TTA/80TTB deduction." data-tip="Interest from bank savings accounts. May qualify for the 80TTA/80TTB deduction.">?</span></label><input type="number" inputmode="numeric" id="osSaving" min="0" placeholder="0"></div>
+            <div class="field"><label>FD / other interest</label><input type="number" inputmode="numeric" id="osFD" min="0" placeholder="0"></div>
+            <div class="field"><label>Dividends</label><input type="number" inputmode="numeric" id="osDiv" min="0" placeholder="0"></div>
+            <div class="field"><label>Other income</label><input type="number" inputmode="numeric" id="osOther" min="0" placeholder="0"></div>
+          </div>
+          <div class="subtotal"><span>Income from Other Sources</span><span id="osOut">₹0</span></div>
+        </div>
+      </section>
+
+      <!-- STEP 7 — G. Deductions -->
+      <section class="step card" data-step="7" data-name="Deductions">
+        <div class="body">
+          <h2 class="step-title"><span class="step-num">G</span>Deductions — Chapter VI-A</h2>
+          <div class="muted-note oldonly">New regime disallows these <strong>except</strong> 80CCD(2) employer NPS (and standard deduction). Values below are used only in the Old regime, except 80CCD(2).</div>
+          <div class="grid">
+            <div class="field"><label>80C (LIC, PPF, ELSS, EPF…) — cap ₹1,50,000 <span class="tip" tabindex="0" role="button" aria-label="help" title="Investments like PPF, ELSS, EPF, life insurance and principal on home loan. Combined cap ₹1,50,000." data-tip="Investments like PPF, ELSS, EPF, life insurance and principal on home loan. Combined cap ₹1,50,000.">?</span></label><input type="number" inputmode="numeric" id="d80c" min="0" placeholder="0"></div>
+            <div class="field"><label>80CCC (pension fund) — shares 1.5L cap</label><input type="number" inputmode="numeric" id="d80ccc" min="0" placeholder="0"></div>
+            <div class="field"><label>80CCD(1) self NPS — shares 1.5L cap</label><input type="number" inputmode="numeric" id="d80ccd1" min="0" placeholder="0"></div>
+            <div class="field"><label>80CCD(1B) NPS extra — cap ₹50,000 <span class="tip" tabindex="0" role="button" aria-label="help" title="An extra ₹50,000 NPS deduction over and above the ₹1.5L 80C limit." data-tip="An extra ₹50,000 NPS deduction over and above the ₹1.5L 80C limit.">?</span></label><input type="number" inputmode="numeric" id="d80ccd1b" min="0" placeholder="0"></div>
+            <div class="field"><label>80CCD(2) employer NPS <span class="badge">Both regimes</span> <span class="tip" tabindex="0" role="button" aria-label="help" title="Employer's contribution to your NPS. Allowed in BOTH regimes." data-tip="Employer's contribution to your NPS. Allowed in BOTH regimes.">?</span></label><input type="number" inputmode="numeric" id="d80ccd2" min="0" placeholder="0"></div>
+            <div class="field"><label>80D health insurance (self+parents) <span class="tip" tabindex="0" role="button" aria-label="help" title="Health-insurance premiums. Up to ₹25,000 (₹50,000 if senior), plus parents." data-tip="Health-insurance premiums. Up to ₹25,000 (₹50,000 if senior), plus parents.">?</span></label><input type="number" inputmode="numeric" id="d80d" min="0" placeholder="0"></div>
+            <div class="field"><label>80DD (disabled dependant)</label><input type="number" inputmode="numeric" id="d80dd" min="0" placeholder="0"></div>
+            <div class="field"><label>80DDB (specified disease)</label><input type="number" inputmode="numeric" id="d80ddb" min="0" placeholder="0"></div>
+            <div class="field"><label>80E education loan interest (no cap)</label><input type="number" inputmode="numeric" id="d80e" min="0" placeholder="0"></div>
+            <div class="field"><label>80EE / 80EEA home loan interest</label><input type="number" inputmode="numeric" id="d80ee" min="0" placeholder="0"></div>
+            <div class="field"><label>80G donations (enter eligible amount)</label><input type="number" inputmode="numeric" id="d80g" min="0" placeholder="0"></div>
+            <div class="field"><label>80GG rent (no HRA)</label><input type="number" inputmode="numeric" id="d80gg" min="0" placeholder="0"></div>
+            <div class="field"><label>80TTA savings interest — cap ₹10,000 <span class="tip" tabindex="0" role="button" aria-label="help" title="Deduction on savings-account interest, up to ₹10,000 (non-seniors)." data-tip="Deduction on savings-account interest, up to ₹10,000 (non-seniors).">?</span></label><input type="number" inputmode="numeric" id="d80tta" min="0" placeholder="0"></div>
+            <div class="field"><label>80TTB senior interest — cap ₹50,000 <span class="tip" tabindex="0" role="button" aria-label="help" title="For seniors: deduction on interest income up to ₹50,000 (replaces 80TTA)." data-tip="For seniors: deduction on interest income up to ₹50,000 (replaces 80TTA).">?</span></label><input type="number" inputmode="numeric" id="d80ttb" min="0" placeholder="0"></div>
+            <div class="field"><label>80U (self disability)</label><input type="number" inputmode="numeric" id="d80u" min="0" placeholder="0"></div>
+          </div>
+          <div class="subtotal"><span>Total Chapter VI-A deductions (this regime)</span><span id="dedOut">₹0</span></div>
+        </div>
+      </section>
+
+      <!-- STEP 8 — H. Taxes paid -->
+      <section class="step card" data-step="8" data-name="Taxes Paid">
+        <div class="body">
+          <h2 class="step-title"><span class="step-num">H</span>Taxes already paid</h2>
+          <div class="grid">
+            <div class="field"><label>TDS <span class="tip" tabindex="0" role="button" aria-label="help" title="Tax Deducted at Source, e.g. by your employer or bank. See Form 26AS / AIS." data-tip="Tax Deducted at Source, e.g. by your employer or bank. See Form 26AS / AIS.">?</span></label><input type="number" inputmode="numeric" id="tds" min="0" placeholder="0"></div>
+            <div class="field"><label>TCS</label><input type="number" inputmode="numeric" id="tcs" min="0" placeholder="0"></div>
+            <div class="field"><label>Advance tax <span class="tip" tabindex="0" role="button" aria-label="help" title="Tax paid in instalments during the year. Required if your net tax exceeds ₹10,000." data-tip="Tax paid in instalments during the year. Required if your net tax exceeds ₹10,000.">?</span></label><input type="number" inputmode="numeric" id="advTax" min="0" placeholder="0"></div>
+            <div class="field"><label>Self-assessment tax</label><input type="number" inputmode="numeric" id="saTax" min="0" placeholder="0"></div>
+          </div>
+          <div class="subtotal"><span>Total taxes paid</span><span id="paidOut">₹0</span></div>
+        </div>
+      </section>
+
+      <!-- STEP 9 — Review & Result -->
+      <section class="step card" data-step="9" data-name="Review &amp; Result">
+        <div class="body">
+          <h2 class="step-title"><span class="step-num">✓</span>Review &amp; Result</h2>
+          <div class="muted-note">Full computation sheet and Old-vs-New comparison for your entries.</div>
+          <div id="reviewBody"></div>
+
+          <div class="sugg-head">💡 Smart suggestions</div>
+          <div class="sugg-target"></div>
+
+          <div class="sugg-head">🔎 Checks &amp; warnings</div>
+          <div class="validation-target"></div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- ============ RIGHT: RESULTS (single-page / desktop) ============ -->
+    <div class="results">
+      <div class="rescard">
+        <h2 style="margin-bottom:6px">Computation summary</h2>
+        <div class="sub" id="resHeader">AY 2026-27 &middot; Compare both</div>
+        <div id="resultBody"></div>
+        <div class="btns no-print">
+          <button class="primary" onclick="window.print()">Print / Save as PDF</button>
+        </div>
+        <div class="muted-note" style="margin-top:10px">Surcharge: &gt;₹50L 10%, &gt;₹1cr 15%, &gt;₹2cr 25%, &gt;₹5cr 37% (New regime capped at 25%). Cess 4%. Marginal relief applied on surcharge &amp; 87A rebate.</div>
+      </div>
+
+      <div class="rescard no-print">
+        <div class="sugg-head" style="margin-top:0">💡 Smart suggestions</div>
+        <div class="sugg-target"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Wizard nav -->
+<div id="wizNav" class="no-print">
+  <div class="navinner">
+    <button class="navbtn" id="btnBack" type="button">← Back</button>
+    <button class="navbtn primary" id="btnNext" type="button">Next →</button>
+  </div>
+</div>
+
+<!-- ============================================================
+     ORIGINAL, VERIFIED CALCULATION ENGINE — DO NOT MODIFY
+     (identical to india_income_tax_calculator.html)
+     ============================================================ -->
+<script>
+/* =========================================================================
+   EDIT RATES HERE — verify against incometax.gov.in before filing
+   Every rate/slab/limit the calculator uses lives in TAX_DATA, keyed by
+   Assessment Year. A non-programmer can edit any number here safely.
+   Slabs are cumulative upper bounds: {upto: <ceiling>, rate: <percent>}.
+   ========================================================================= */
+const TAX_DATA = {
+
+  // ---- Common to all years ----
+  common: {
+    cessRate: 4,                    // Health & Education Cess % on (tax + surcharge)
+    surchargeSlabs: [               // applied to income tax (progressive by TOTAL income)
+      { threshold: 5000000,  rate: 10 },   // > 50 lakh
+      { threshold: 10000000, rate: 15 },   // > 1 crore
+      { threshold: 20000000, rate: 25 },   // > 2 crore
+      { threshold: 50000000, rate: 37 }    // > 5 crore
+    ],
+    newRegimeSurchargeCap: 25       // New regime: 37% slab does NOT apply; max 25%
+  },
+
+  "2024-25": {                      // FY 2023-24
+    old: {
+      slabs: {
+        below60: [ {upto:250000,rate:0},{upto:500000,rate:5},{upto:1000000,rate:20},{upto:Infinity,rate:30} ],
+        senior:  [ {upto:300000,rate:0},{upto:500000,rate:5},{upto:1000000,rate:20},{upto:Infinity,rate:30} ],
+        super:   [ {upto:500000,rate:0},{upto:1000000,rate:20},{upto:Infinity,rate:30} ]
+      },
+      stdDeduction: 50000,
+      rebate: { limit: 500000, amount: 12500, marginal: false }
+    },
+    new: {
+      slabs: [ {upto:300000,rate:0},{upto:600000,rate:5},{upto:900000,rate:10},{upto:1200000,rate:15},{upto:1500000,rate:20},{upto:Infinity,rate:30} ],
+      stdDeduction: 50000,
+      rebate: { limit: 700000, amount: 25000, marginal: true }
+    },
+    cg: { ltcgExempt: 100000, otherLTCG: 20, forcePeriod: "pre",
+          rates: { pre:{equitySTCG:15, equityLTCG:10}, post:{equitySTCG:20, equityLTCG:12.5} } }
+  },
+
+  "2025-26": {                      // FY 2024-25
+    old: {
+      slabs: {
+        below60: [ {upto:250000,rate:0},{upto:500000,rate:5},{upto:1000000,rate:20},{upto:Infinity,rate:30} ],
+        senior:  [ {upto:300000,rate:0},{upto:500000,rate:5},{upto:1000000,rate:20},{upto:Infinity,rate:30} ],
+        super:   [ {upto:500000,rate:0},{upto:1000000,rate:20},{upto:Infinity,rate:30} ]
+      },
+      stdDeduction: 50000,
+      rebate: { limit: 500000, amount: 12500, marginal: false }
+    },
+    new: {
+      slabs: [ {upto:300000,rate:0},{upto:700000,rate:5},{upto:1000000,rate:10},{upto:1200000,rate:15},{upto:1500000,rate:20},{upto:Infinity,rate:30} ],
+      stdDeduction: 75000,
+      rebate: { limit: 700000, amount: 25000, marginal: true }
+    },
+    // FY 2024-25 straddles the 23-Jul-2024 rate change → user picks the period
+    cg: { ltcgExempt: 125000, otherLTCG: 20, forcePeriod: null,
+          rates: { pre:{equitySTCG:15, equityLTCG:10}, post:{equitySTCG:20, equityLTCG:12.5} } }
+  },
+
+  "2026-27": {                      // FY 2025-26 (Budget 2025)
+    old: {
+      slabs: {
+        below60: [ {upto:250000,rate:0},{upto:500000,rate:5},{upto:1000000,rate:20},{upto:Infinity,rate:30} ],
+        senior:  [ {upto:300000,rate:0},{upto:500000,rate:5},{upto:1000000,rate:20},{upto:Infinity,rate:30} ],
+        super:   [ {upto:500000,rate:0},{upto:1000000,rate:20},{upto:Infinity,rate:30} ]
+      },
+      stdDeduction: 50000,
+      rebate: { limit: 500000, amount: 12500, marginal: false }
+    },
+    new: {
+      slabs: [ {upto:400000,rate:0},{upto:800000,rate:5},{upto:1200000,rate:10},{upto:1600000,rate:15},{upto:2000000,rate:20},{upto:2400000,rate:25},{upto:Infinity,rate:30} ],
+      stdDeduction: 75000,
+      rebate: { limit: 1200000, amount: 60000, marginal: true }
+    },
+    cg: { ltcgExempt: 125000, otherLTCG: 20, forcePeriod: "post",
+          rates: { pre:{equitySTCG:15, equityLTCG:10}, post:{equitySTCG:20, equityLTCG:12.5} } }
+  }
+};
+
+/* ================= helpers ================= */
+function num(id){ const el=document.getElementById(id); if(!el) return 0; const v=parseFloat(el.value); return isNaN(v)?0:Math.max(v,0); }
+function val(id){ const el=document.getElementById(id); return el?el.value:""; }
+
+function fmtINR(n){
+  n = Math.round(n||0);
+  const neg = n<0; n=Math.abs(n);
+  let s = String(n);
+  let last3 = s.slice(-3);
+  let rest = s.slice(0,-3);
+  if(rest) last3 = ',' + last3;
+  rest = rest.replace(/\B(?=(\d{2})+(?!\d))/g, ',');
+  return (neg?'-₹':'₹') + rest + last3;
+}
+
+// progressive tax on cumulative-ceiling slabs
+function slabTax(income, slabs){
+  let tax=0, prev=0;
+  for(const s of slabs){
+    if(income>prev){
+      const band = Math.min(income, s.upto) - prev;
+      tax += band * s.rate/100;
+      prev = s.upto;
+    } else break;
+  }
+  return tax;
+}
+
+/* ================= core computation for ONE regime ================= */
+function computeRegime(regime){   // regime = 'old' | 'new'
+  const ay = val('ay');
+  const Y = TAX_DATA[ay];
+  const cfg = Y[regime];
+  const age = val('age');
+  const isOld = regime==='old';
+
+  // ---- B. Salary ----
+  const gross = num('grossSalary');
+  const hraExempt = isOld ? computeHRA() : 0;
+  const lta = isOld ? num('lta') : 0;
+  const otherExempt = isOld ? num('otherExempt') : 0;
+  const profTax = isOld ? num('profTax') : 0;
+  const afterExempt = Math.max(0, gross - hraExempt - lta - otherExempt);
+  const std = gross>0 ? Math.min(cfg.stdDeduction, afterExempt) : 0;
+  const salaryIncome = Math.max(0, afterExempt - profTax - std);
+
+  // ---- C. House property ----
+  const hp = computeHP(isOld);
+
+  // ---- E. Business ----
+  const bp = num('bpNet') + num('ad44Digital')*0.06 + num('ad44Cash')*0.08 + num('ada44Gross')*0.50;
+
+  // ---- F. Other sources ----
+  const os = num('osSaving') + num('osFD') + num('osDiv') + num('osOther');
+
+  // ---- D. Capital gains ----
+  const cg = computeCG(Y.cg);
+
+  // Normal (slab-taxable) income before deductions
+  const normalGross = salaryIncome + hp.net + bp + os + cg.otherSTCG;
+
+  // ---- G. Deductions ----
+  const ded = computeDeductions(isOld);
+
+  const normalTaxable = Math.max(0, normalGross - ded);
+  const specialIncome = cg.stcg111aInc + cg.ltcg112aInc + cg.ltcgOtherInc;
+  const totalTaxable = normalTaxable + specialIncome;
+
+  // Gross Total Income (display)
+  const gti = normalGross + specialIncome;
+
+  // ---- Tax on slabs (normal income) ----
+  const slabs = isOld ? cfg.slabs[age] : cfg.slabs;
+  const normalTax = slabTax(normalTaxable, slabs);
+
+  // ---- Special-rate taxes ----
+  const specialTax = cg.stcg111aInc*cg.rSTCG/100 + cg.ltcg112aInc*cg.rLTCG/100 + cg.ltcgOtherInc*Y.cg.otherLTCG/100;
+
+  let taxBeforeRebate = normalTax + specialTax;
+
+  // ---- 87A rebate (applies to normal tax only; excludes special-rate CG tax) ----
+  let rebate = 0;
+  const rb = cfg.rebate;
+  if(totalTaxable <= rb.limit){
+    rebate = Math.min(normalTax, rb.amount);
+  } else if(rb.marginal){
+    const excess = totalTaxable - rb.limit;
+    if(normalTax > excess) rebate = normalTax - excess;   // marginal relief on rebate
+  }
+  const taxAfterRebate = Math.max(0, taxBeforeRebate - rebate);
+
+  // ---- Surcharge (+ marginal relief) ----
+  const sur = computeSurcharge(totalTaxable, taxAfterRebate, regime, slabs, isOld, age, Y, cfg);
+
+  // ---- Cess ----
+  const cess = (taxAfterRebate + sur) * TAX_DATA.common.cessRate/100;
+
+  const totalTax = taxAfterRebate + sur + cess;
+
+  const paid = num('tds')+num('tcs')+num('advTax')+num('saTax');
+  const net = totalTax - paid;   // >0 payable, <0 refund
+
+  return {
+    regime, salaryIncome, hp, bp, os, cg, gti, ded,
+    normalTaxable, specialIncome, totalTaxable,
+    normalTax, specialTax, taxBeforeRebate, rebate, taxAfterRebate,
+    surcharge: sur, cess, totalTax, paid, net,
+    stdDeduction: std, hraExempt
+  };
+}
+
+/* ---- HRA sub-calc (old regime) ---- */
+function computeHRA(){
+  const basic = num('hraBasic'), rec = num('hraReceived'), rent = num('hraRent');
+  const metro = val('hraMetro')==='yes';
+  if(rec<=0 || basic<=0) return 0;
+  const a = rec;
+  const b = Math.max(0, rent - 0.10*basic);
+  const c = (metro?0.50:0.40)*basic;
+  return Math.max(0, Math.min(a,b,c));
+}
+
+/* ---- House property ---- */
+function computeHP(isOld){
+  let total = 0, detail=[];
+  for(const p of ['hp1','hp2']){
+    const type = val(p+'type');
+    if(type==='none' || !type) continue;
+    let net;
+    if(type==='sop'){
+      // NAV = 0; only interest deductible (cap 2L, old only)
+      const interest = isOld ? Math.min(num(p+'int'), 200000) : 0; // new regime: SOP interest not allowed
+      net = -interest;
+    } else { // let-out
+      const nav = Math.max(0, num(p+'rent') - num(p+'mun'));
+      const std30 = nav*0.30;
+      const interest = num(p+'int');
+      net = nav - std30 - interest;
+    }
+    total += net;
+    detail.push({p,type,net});
+  }
+  // Set-off of HP loss against other heads
+  let net = total;
+  if(total < 0){
+    if(!isOld){
+      net = 0;                          // new regime: HP loss not set off vs other heads
+    } else {
+      net = Math.max(total, -200000);   // old regime: cap set-off at 2L
+    }
+  }
+  return { net, raw: total, detail };
+}
+
+/* ---- Capital gains ---- */
+function computeCG(cgCfg){
+  const period = cgCfg.forcePeriod || val('cgPeriod');
+  const r = cgCfg.rates[period];
+  const stcg111aInc = num('stcg111a');
+  const ltcgRaw = num('ltcg112a');
+  const exemptUsed = Math.min(ltcgRaw, cgCfg.ltcgExempt);
+  const ltcg112aInc = Math.max(0, ltcgRaw - cgCfg.ltcgExempt);
+  const otherSTCG = num('stcgOther');       // slab
+  const ltcgOtherInc = num('ltcgOther');    // 20%
+  return {
+    stcg111aInc, ltcg112aInc, ltcgOtherInc, otherSTCG,
+    exemptUsed, rSTCG: r.equitySTCG, rLTCG: r.equityLTCG, period
+  };
+}
+
+/* ---- Chapter VI-A ---- */
+function computeDeductions(isOld){
+  const ccd2 = num('d80ccd2');            // employer NPS — both regimes
+  if(!isOld) return ccd2;
+  const sec80c = Math.min(num('d80c')+num('d80ccc')+num('d80ccd1'), 150000);
+  const ccd1b = Math.min(num('d80ccd1b'), 50000);
+  const d80d = num('d80d');
+  const rest = num('d80dd')+num('d80ddb')+num('d80e')+num('d80ee')+num('d80g')+num('d80gg')
+             + Math.min(num('d80tta'),10000) + Math.min(num('d80ttb'),50000) + num('d80u');
+  return sec80c + ccd1b + ccd2 + d80d + rest;
+}
+
+/* ---- Surcharge with marginal relief ---- */
+function computeSurcharge(totalIncome, baseTax, regime, slabs, isOld, age, Y, cfg){
+  let slabsSur = TAX_DATA.common.surchargeSlabs.slice();
+  if(regime==='new'){
+    // 37% slab does not apply; cap at 25% — drop the >5cr entry so >2cr stays 25%
+    slabsSur = slabsSur.filter(s => s.rate <= TAX_DATA.common.newRegimeSurchargeCap);
+  }
+  // find applicable rate & the threshold just crossed, plus previous rate
+  let rate=0, threshold=0, prevRate=0;
+  for(let i=0;i<slabsSur.length;i++){
+    if(totalIncome > slabsSur[i].threshold){
+      prevRate = rate;
+      rate = slabsSur[i].rate;
+      threshold = slabsSur[i].threshold;
+    }
+  }
+  if(rate===0) return 0;
+
+  let surcharge = baseTax * rate/100;
+
+  // Marginal relief: (tax+surcharge) should not exceed
+  // (tax at threshold + surcharge-at-threshold) + (income - threshold)
+  const taxAtThreshold = slabTax(threshold, slabs); // rebate never applies at these incomes
+  const surAtThreshold = taxAtThreshold * prevRate/100;
+  const allowedMax = taxAtThreshold + surAtThreshold + (totalIncome - threshold);
+  if(baseTax + surcharge > allowedMax){
+    surcharge = Math.max(0, allowedMax - baseTax);
+  }
+  return surcharge;
+}
+
+/* ================= render ================= */
+function render(){
+  syncRegimeUI();
+
+  const ay = val('ay');
+  const regimeSel = val('regime');
+  document.getElementById('resHeader').textContent =
+    'AY '+ay+'  ·  ' + (regimeSel==='compare'?'Compare both':(regimeSel==='new'?'New regime':'Old regime'));
+
+  // subtotal echoes (use whichever regime is primary for display; use 'old' echoes to show HRA etc.)
+  updateEchoes();
+
+  const box = document.getElementById('resultBody');
+
+  if(regimeSel==='compare'){
+    const oldR = computeRegime('old');
+    const newR = computeRegime('new');
+    const oldCheaper = oldR.totalTax <= newR.totalTax;
+    box.innerHTML =
+      '<div class="cmp">' +
+        regimeCol('Old regime', oldR, oldCheaper) +
+        regimeCol('New regime', newR, !oldCheaper) +
+      '</div>' +
+      recoBlock(oldR, newR, oldCheaper) +
+      detailSheet(oldCheaper?oldR:newR, (oldCheaper?'Old':'New')+' regime (cheaper) — full sheet');
+  } else {
+    const R = computeRegime(regimeSel);
+    box.innerHTML = detailSheet(R, (regimeSel==='new'?'New':'Old')+' regime — full sheet') + netPill(R);
+  }
+}
+
+function regimeCol(name, R, win){
+  return '<div class="cmpcol'+(win?' win':'')+'">' +
+    '<h3>'+name+ (win?'<span class="badge">Cheaper</span>':'') +'</h3>' +
+    '<div class="amt">'+fmtINR(R.totalTax)+'</div>' +
+    '<div class="rrow"><span class="lbl">Taxable</span><span>'+fmtINR(R.totalTaxable)+'</span></div>' +
+    '<div class="rrow"><span class="lbl">'+(R.net>=0?'Payable':'Refund')+'</span><span>'+fmtINR(Math.abs(R.net))+'</span></div>' +
+  '</div>';
+}
+
+function recoBlock(oldR, newR, oldCheaper){
+  const saving = Math.abs(oldR.totalTax - newR.totalTax);
+  const winner = oldCheaper?'Old':'New';
+  if(saving<1) return '<div class="reco">Both regimes give the same tax ('+fmtINR(oldR.totalTax)+'). Either works.</div>';
+  return '<div class="reco"><strong>Recommendation:</strong> choose the <strong>'+winner+' regime</strong> — you save <strong>'+fmtINR(saving)+'</strong> in tax vs the other.</div>';
+}
+
+function row(lbl,v,big){ return '<div class="rrow'+(big?' big':'')+'"><span class="lbl">'+lbl+'</span><span>'+v+'</span></div>'; }
+
+function detailSheet(R, title){
+  let h = '<div style="margin-top:12px;font-weight:700">'+title+'</div>';
+  h += row('Income from Salary', fmtINR(R.salaryIncome));
+  h += row('Income from House Property', fmtINR(R.hp.net));
+  h += row('Income from Business/Profession', fmtINR(R.bp));
+  h += row('Income from Other Sources', fmtINR(R.os));
+  h += row('Capital gains (special-rate)', fmtINR(R.specialIncome));
+  h += row('Gross Total Income', fmtINR(R.gti));
+  h += row('Less: Chapter VI-A deductions', '− '+fmtINR(R.ded));
+  h += row('Total (taxable) Income', fmtINR(R.totalTaxable), true);
+  h += row('Tax on slabs (normal income)', fmtINR(R.normalTax));
+  if(R.specialTax>0) h += row('Tax on capital gains (special rates)', fmtINR(R.specialTax));
+  h += row('Tax before rebate', fmtINR(R.taxBeforeRebate));
+  h += row('Less: Rebate u/s 87A', '− '+fmtINR(R.rebate));
+  h += row('Tax after rebate', fmtINR(R.taxAfterRebate));
+  h += row('Add: Surcharge', '+ '+fmtINR(R.surcharge));
+  h += row('Add: Health &amp; Education Cess (4%)', '+ '+fmtINR(R.cess));
+  h += row('Total Tax Liability', fmtINR(R.totalTax), true);
+  h += row('Less: Taxes paid', '− '+fmtINR(R.paid));
+  return h;
+}
+
+function netPill(R){
+  if(R.net > 0.5) return '<div class="pill payable">Balance Payable: '+fmtINR(R.net)+'</div>';
+  if(R.net < -0.5) return '<div class="pill refund">Refund Due: '+fmtINR(-R.net)+'</div>';
+  return '<div class="pill refund">Nil — no tax payable / refund</div>';
+}
+
+/* ---- live subtotal echoes in the input panel ---- */
+function updateEchoes(){
+  document.getElementById('hraExemptOut').textContent = fmtINR(computeHRA());
+  // std deduction + salary shown for the "effective" regime; use new if compare, else selected
+  const regimeSel = val('regime');
+  const forEcho = regimeSel==='old' ? 'old' : 'new';
+  const R = computeRegime(forEcho);
+  document.getElementById('stdDedOut').textContent = fmtINR(R.stdDeduction);
+  document.getElementById('salaryOut').textContent = fmtINR(R.salaryIncome);
+  document.getElementById('hpOut').textContent = fmtINR(R.hp.net);
+  document.getElementById('ad44Out').textContent = fmtINR(num('ad44Digital')*0.06 + num('ad44Cash')*0.08);
+  document.getElementById('ada44Out').textContent = fmtINR(num('ada44Gross')*0.50);
+  document.getElementById('bpOut').textContent = fmtINR(R.bp);
+  document.getElementById('osOut').textContent = fmtINR(R.os);
+  document.getElementById('dedOut').textContent = fmtINR(R.ded);
+  document.getElementById('paidOut').textContent = fmtINR(num('tds')+num('tcs')+num('advTax')+num('saTax'));
+  // CG exemption echo
+  const Y = TAX_DATA[val('ay')];
+  document.getElementById('ltcgExemptOut').textContent = fmtINR(Math.min(num('ltcg112a'), Y.cg.ltcgExempt));
+}
+
+/* ---- toggle old-only fields + CG period per AY ---- */
+function syncRegimeUI(){
+  const ay = val('ay');
+  const Y = TAX_DATA[ay];
+  const regimeSel = val('regime');
+  // Old-only sections dimmed when purely New regime selected
+  const dim = regimeSel==='new';
+  document.querySelectorAll('.oldonly').forEach(el=>{ el.style.opacity = dim?0.5:1; });
+
+  // CG period selector: only editable when the year straddles the rate change
+  const cgSel = document.getElementById('cgPeriod');
+  const help = document.getElementById('cgPeriodHelp');
+  if(Y.cg.forcePeriod){
+    cgSel.value = Y.cg.forcePeriod;
+    cgSel.disabled = true;
+    help.textContent = Y.cg.forcePeriod==='pre'
+      ? 'Fixed for this year: equity STCG 15%, LTCG 10%.'
+      : 'Fixed for this year: equity STCG 20%, LTCG 12.5%.';
+  } else {
+    cgSel.disabled = false;
+    help.textContent = 'This FY straddles 23-Jul-2024 — pick the transfer period for your equity gains.';
+  }
+
+  // NRI note
+  const st = val('status');
+  const nn = document.getElementById('nriNote');
+  if(st==='nri') nn.textContent = 'Note: Non-residents cannot claim the 87A rebate and basic-exemption benefits differ. This estimator still applies slab rates; verify NRI-specific rules.';
+  else if(st==='rnor') nn.textContent = 'RNOR: only India-sourced / India-received income is taxable. Enter only taxable amounts.';
+  else nn.textContent = '';
+}
+
+/* ---- wire up live recalculation ---- */
+document.getElementById('inputs').addEventListener('input', render);
+document.getElementById('inputs').addEventListener('change', render);
+render();
+</script>
+
+<!-- ============================================================
+     UI / UX ENHANCEMENT LAYER — wizard, suggestions, validation,
+     auto-save, tooltips, PWA. Wraps the engine above; does NOT
+     change any calculation, rate table, field id, or math.
+     ============================================================ -->
+<script>
+(function(){
+  "use strict";
+  var STORE_KEY = "india_tax_v1";
+  var TOTAL_STEPS = 9;
+  var currentStep = 1;
+
+  var inputsRoot = document.getElementById('inputs');
+  var layout = document.getElementById('mainLayout');
+
+  /* ---------- helpers reusing the engine ---------- */
+  function effectiveResult(){
+    var sel = val('regime');
+    if(sel === 'compare'){
+      var o = computeRegime('old'), n = computeRegime('new');
+      var oldCheaper = o.totalTax <= n.totalTax;
+      return { mode:'compare', old:o, neu:n, R: oldCheaper?o:n, oldCheaper:oldCheaper };
+    }
+    var R = computeRegime(sel);
+    return { mode:'single', R:R, sel:sel };
+  }
+  function oldRelevant(){ return val('regime') !== 'new'; }
+  function isSenior(){ return val('age') === 'senior' || val('age') === 'super'; }
+  function marginalRate(taxable, slabs){
+    var prev = 0, rate = 0;
+    for(var i=0;i<slabs.length;i++){
+      if(taxable > prev){ rate = slabs[i].rate; prev = slabs[i].upto; }
+      else break;
+    }
+    return rate;
+  }
+  function oldMarginalRate(){
+    var Y = TAX_DATA[val('ay')];
+    var oldR = computeRegime('old');
+    var slabs = Y.old.slabs[val('age')];
+    var r = marginalRate(oldR.normalTaxable, slabs);
+    return r > 0 ? r : 5; // if income currently in 0% band, a small rate is the floor benefit
+  }
+
+  /* ======================================================
+     1. SMART SUGGESTIONS
+     ====================================================== */
+  function generateSuggestions(){
+    var out = [];
+    var eff = effectiveResult();
+    var ay = val('ay');
+    var Y = TAX_DATA[ay];
+    var gross = num('grossSalary');
+
+    // (a) Regime pick
+    if(eff.mode === 'compare'){
+      var saving = Math.abs(eff.old.totalTax - eff.neu.totalTax);
+      if(saving < 1){
+        out.push({ic:'✅', cls:'good', msg:'Both regimes give you the same tax right now — either works.', impact:'₹0 difference'});
+      } else {
+        var who = eff.oldCheaper ? 'Old' : 'New';
+        out.push({ic:'✅', cls:'good',
+          msg: who + ' regime is cheaper for you by about ' + fmtINR(saving) + '. It is selected as the recommendation below.',
+          impact: 'Saves ' + fmtINR(saving)});
+      }
+    }
+
+    // (b) 80C headroom (old regime)
+    if(oldRelevant()){
+      var used80c = Math.min(num('d80c') + num('d80ccc') + num('d80ccd1'), 150000);
+      var room = 150000 - used80c;
+      if(room > 0){
+        var mr = oldMarginalRate();
+        var c = room * mr / 100;
+        out.push({ic:'💡', cls:'',
+          msg:'You have used ' + fmtINR(used80c) + ' of the ₹1,50,000 80C limit — investing about ' + fmtINR(room) +
+              ' more in eligible options (PPF, ELSS, EPF, etc.) could reduce taxable income at your ~' + mr + '% slab.',
+          impact:'Potential ~' + fmtINR(c) + ' tax saving'});
+      }
+    }
+
+    // (c) 80CCD(1B) NPS extra
+    if(oldRelevant() && num('d80ccd1b') === 0){
+      var mr2 = oldMarginalRate();
+      out.push({ic:'💡', cls:'',
+        msg:'An extra ₹50,000 NPS deduction under 80CCD(1B) is available beyond the ₹1.5L 80C limit — currently unused.',
+        impact:'Potential ~' + fmtINR(50000 * mr2 / 100) + ' tax saving'});
+    }
+
+    // (d) 80D health insurance
+    if(oldRelevant() && num('d80d') === 0 && gross > 0){
+      var cap80d = isSenior() ? 50000 : 25000;
+      out.push({ic:'💡', cls:'',
+        msg:'No health-insurance deduction (80D) is claimed — up to ' + fmtINR(cap80d) +
+            (isSenior() ? ' (senior)' : '') + ' of premium is deductible in the Old regime.',
+        impact:'Up to ' + fmtINR(cap80d * oldMarginalRate() / 100) + ' tax saving'});
+    }
+
+    // (e) 80TTA / 80TTB
+    if(oldRelevant() && num('osSaving') > 0 && num('d80tta') === 0 && num('d80ttb') === 0){
+      if(isSenior()){
+        out.push({ic:'💡', cls:'',
+          msg:'You entered savings/interest income but no 80TTB deduction — seniors can deduct interest income up to ₹50,000.',
+          impact:'Up to ' + fmtINR(Math.min(num('osSaving'),50000) * oldMarginalRate() / 100) + ' tax saving'});
+      } else {
+        out.push({ic:'💡', cls:'',
+          msg:'You entered savings-account interest but no 80TTA deduction — up to ₹10,000 of savings interest is deductible.',
+          impact:'Up to ' + fmtINR(Math.min(num('osSaving'),10000) * oldMarginalRate() / 100) + ' tax saving'});
+      }
+    }
+
+    // (f) HRA incomplete
+    if(oldRelevant() && gross > 0 && num('hraReceived') > 0 && (num('hraRent') === 0 || num('hraBasic') === 0)){
+      out.push({ic:'⚠️', cls:'warn',
+        msg:'You have HRA received but the HRA sub-calculator is incomplete (rent and/or Basic+DA is blank) — fill it in to claim the HRA exemption.',
+        impact:'Exemption currently ₹0'});
+    }
+
+    // (g) 87A cliff
+    var rb = (eff.R.regime === 'old') ? Y.old.rebate : Y.new.rebate;
+    if(eff.R.totalTaxable > rb.limit){
+      var gap = eff.R.totalTaxable - rb.limit;
+      if(gap <= 25000 && eff.R.taxAfterRebate > 0){
+        out.push({ic:'⚠️', cls:'warn',
+          msg:'Your taxable income is only ' + fmtINR(gap) + ' above the ₹' +
+              fmtINR(rb.limit).replace('₹','') + ' rebate threshold — a small additional deduction to fall under it could unlock the 87A rebate.',
+          impact:'Could save up to ~' + fmtINR(eff.R.taxAfterRebate)});
+      }
+    }
+
+    // (h) Advance tax / interest
+    if(eff.R.net > 10000 && num('advTax') === 0){
+      out.push({ic:'⚠️', cls:'warn',
+        msg:'Net tax payable exceeds ₹10,000 but no advance tax is recorded — interest under sections 234B/234C may apply.',
+        impact:'Net payable ' + fmtINR(eff.R.net)});
+    }
+
+    // (i) New-regime waste
+    if(val('regime') === 'new'){
+      var viaIds = ['d80c','d80ccc','d80ccd1','d80ccd1b','d80d','d80dd','d80ddb','d80e','d80ee','d80g','d80gg','d80tta','d80ttb','d80u'];
+      var totalVia = 0;
+      for(var i=0;i<viaIds.length;i++){ totalVia += num(viaIds[i]); }
+      if(totalVia > 0){
+        out.push({ic:'⚠️', cls:'warn',
+          msg:'You are on the New regime but entered ' + fmtINR(totalVia) +
+              ' of Chapter VI-A deductions — these do not apply here (only employer NPS 80CCD(2) does). Consider comparing with the Old regime.',
+          impact:'Deductions ignored under New regime'});
+      }
+    }
+
+    return out;
+  }
+
+  function renderSuggestions(){
+    var list = generateSuggestions();
+    var html = '';
+    if(list.length === 0){
+      html = '<div class="sugg-none">No specific suggestions right now — enter your details to see personalised, educational tips here.</div>';
+    } else {
+      for(var i=0;i<list.length;i++){
+        var s = list[i];
+        html += '<div class="sugg-card ' + (s.cls||'') + '">' +
+                  '<span class="ic">' + s.ic + '</span>' +
+                  '<div><div class="msg">' + s.msg + '</div>' +
+                  (s.impact ? '<div class="impact">' + s.impact + '</div>' : '') +
+                  '</div></div>';
+      }
+    }
+    html += '<div class="sugg-disc">Educational suggestions only — not financial or tax advice.</div>';
+    var targets = document.querySelectorAll('.sugg-target');
+    for(var t=0;t<targets.length;t++){ targets[t].innerHTML = html; }
+  }
+
+  /* ======================================================
+     2. VALIDATION / SANITY CHECKS
+     ====================================================== */
+  function validate(){
+    var issues = [];
+
+    // negative / non-numeric numeric inputs
+    var badFields = [];
+    var numInputs = inputsRoot.querySelectorAll('input[type="number"]');
+    for(var i=0;i<numInputs.length;i++){
+      var el = numInputs[i];
+      el.classList.remove('bad');
+      var raw = el.value.trim();
+      if(raw === '') continue;
+      var v = parseFloat(raw);
+      if(isNaN(v) || v < 0){
+        el.classList.add('bad');
+        badFields.push(el);
+      }
+    }
+    if(badFields.length){
+      issues.push({ic:'⚠️', msg: badFields.length + ' field(s) contain a negative or non-numeric value — these are treated as 0 in the calculation.'});
+    }
+
+    // HRA claimed but rent 0
+    if(num('hraReceived') > 0 && num('hraRent') === 0){
+      issues.push({ic:'⚠️', msg:'HRA received is entered but rent paid is 0 — no HRA exemption can be claimed without rent.'});
+    }
+
+    // 80C over cap
+    var c80 = num('d80c') + num('d80ccc') + num('d80ccd1');
+    if(c80 > 150000){
+      issues.push({ic:'ℹ️', msg:'80C group entered is ' + fmtINR(c80) + ' — it is capped at ₹1,50,000, so only ₹1,50,000 is used.'});
+    }
+
+    // 80CCD(1B) over cap
+    if(num('d80ccd1b') > 50000){
+      issues.push({ic:'ℹ️', msg:'80CCD(1B) entered exceeds the ₹50,000 cap — only ₹50,000 is used.'});
+    }
+
+    // new regime with VIA entries
+    if(val('regime') === 'new'){
+      var viaIds = ['d80c','d80ccc','d80ccd1','d80ccd1b','d80d','d80dd','d80ddb','d80e','d80ee','d80g','d80gg','d80tta','d80ttb','d80u'];
+      var totalVia = 0;
+      for(var j=0;j<viaIds.length;j++){ totalVia += num(viaIds[j]); }
+      if(totalVia > 0){
+        issues.push({ic:'⚠️', msg:'New regime selected, but Chapter VI-A deductions are entered — they are ignored except employer NPS 80CCD(2).'});
+      }
+    }
+
+    // HP loss set-off cap hit (old regime)
+    var hpRaw = computeHP(true).raw;
+    if(hpRaw < -200000){
+      issues.push({ic:'ℹ️', msg:'House-property loss is ' + fmtINR(hpRaw) + ' — set-off against other income is capped at ₹2,00,000; the remainder carries forward.'});
+    }
+
+    return issues;
+  }
+
+  function renderValidation(){
+    var issues = validate();
+    var html = '';
+    if(issues.length === 0){
+      html = '<div class="val-item"><span class="ic">✅</span><span>No issues detected in your entries.</span></div>';
+    } else {
+      for(var i=0;i<issues.length;i++){
+        html += '<div class="val-item"><span class="ic">' + issues[i].ic + '</span><span>' + issues[i].msg + '</span></div>';
+      }
+    }
+    var targets = document.querySelectorAll('.validation-target');
+    for(var t=0;t<targets.length;t++){ targets[t].innerHTML = html; }
+
+    var badge = document.getElementById('valBadge');
+    if(issues.length === 0){
+      badge.className = 'hbtn ok';
+      badge.textContent = '✓ No issues';
+    } else {
+      badge.className = 'hbtn hasissues';
+      badge.textContent = '⚠ ' + issues.length + ' to review';
+    }
+  }
+
+  /* ======================================================
+     3. REVIEW SHEET (reuses engine's detailSheet/regimeCol)
+     ====================================================== */
+  function renderReview(){
+    var t = document.getElementById('reviewBody');
+    if(!t) return;
+    var sel = val('regime');
+    if(sel === 'compare'){
+      var o = computeRegime('old'), n = computeRegime('new');
+      var oc = o.totalTax <= n.totalTax;
+      t.innerHTML = '<div class="cmp">' + regimeCol('Old regime', o, oc) + regimeCol('New regime', n, !oc) + '</div>' +
+                    recoBlock(o, n, oc) +
+                    detailSheet(oc?o:n, (oc?'Old':'New') + ' regime (cheaper) — full sheet') +
+                    netPill(oc?o:n);
+    } else {
+      var R = computeRegime(sel);
+      t.innerHTML = detailSheet(R, (sel==='new'?'New':'Old') + ' regime — full sheet') + netPill(R);
+    }
+  }
+
+  /* ======================================================
+     4. MINI SUMMARY
+     ====================================================== */
+  function updateMini(){
+    var el = document.getElementById('miniSummary');
+    if(!el) return;
+    var eff = effectiveResult();
+    var label;
+    if(eff.mode === 'compare'){ label = (eff.oldCheaper?'Old':'New') + ' (cheaper)'; }
+    else { label = (eff.sel==='new'?'New':'Old'); }
+    el.innerHTML = '<span>Estimated tax · ' + label + ' regime</span><strong>' + fmtINR(eff.R.totalTax) + '</strong>';
+  }
+
+  /* ======================================================
+     5. AUTO-SAVE
+     ====================================================== */
+  function collectState(){
+    var data = {};
+    var els = inputsRoot.querySelectorAll('input, select');
+    for(var i=0;i<els.length;i++){
+      if(els[i].id) data[els[i].id] = els[i].value;
+    }
+    data.__regime = val('regime');
+    data.__ay = val('ay');
+    data.__status = val('status');
+    data.__age = val('age');
+    return data;
+  }
+  function saveState(){
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(collectState())); } catch(e){}
+  }
+  function restoreState(){
+    var raw;
+    try { raw = localStorage.getItem(STORE_KEY); } catch(e){ return; }
+    if(!raw) return;
+    var data;
+    try { data = JSON.parse(raw); } catch(e){ return; }
+    // top-level selects live outside the compute but are read via val() on document
+    var extra = {ay:data.__ay, status:data.__status, age:data.__age, regime:data.__regime};
+    for(var k in extra){
+      if(extra[k] != null){ var e2 = document.getElementById(k); if(e2) e2.value = extra[k]; }
+    }
+    for(var id in data){
+      if(id.indexOf('__') === 0) continue;
+      var el = document.getElementById(id);
+      if(el && data[id] != null) el.value = data[id];
+    }
+  }
+
+  /* ======================================================
+     6. WIZARD NAVIGATION
+     ====================================================== */
+  var stepNames = {};
+  (function(){
+    var steps = inputsRoot.querySelectorAll('.step');
+    for(var i=0;i<steps.length;i++){
+      var n = parseInt(steps[i].getAttribute('data-step'),10);
+      stepNames[n] = steps[i].getAttribute('data-name') || ('Step ' + n);
+    }
+  })();
+
+  function showStep(n){
+    n = Math.max(1, Math.min(TOTAL_STEPS, n));
+    currentStep = n;
+    var steps = inputsRoot.querySelectorAll('.step');
+    for(var i=0;i<steps.length;i++){
+      var sn = parseInt(steps[i].getAttribute('data-step'),10);
+      if(sn === n) steps[i].classList.add('active');
+      else steps[i].classList.remove('active');
+    }
+    // progress
+    document.getElementById('pstepNow').textContent = n;
+    document.getElementById('pstepTot').textContent = TOTAL_STEPS;
+    var nameEl = document.getElementById('pstepName');
+    nameEl.innerHTML = stepNames[n];
+    var pct = Math.round(n / TOTAL_STEPS * 100);
+    document.getElementById('pfill').style.width = pct + '%';
+    document.getElementById('ppct').textContent = pct + '%';
+    // nav buttons
+    document.getElementById('btnBack').disabled = (n === 1);
+    var next = document.getElementById('btnNext');
+    if(n === TOTAL_STEPS){ next.textContent = 'Done ✓'; }
+    else if(n === TOTAL_STEPS - 1){ next.textContent = 'Review →'; }
+    else { next.textContent = 'Next →'; }
+    // refresh derived views when landing on review
+    refreshAll();
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+
+  /* ======================================================
+     7. VIEW TOGGLE (wizard <-> single page)
+     ====================================================== */
+  function setMode(mode){
+    layout.setAttribute('data-mode', mode);
+    var toggle = document.getElementById('viewToggle');
+    var nav = document.getElementById('wizNav');
+    if(mode === 'single'){
+      toggle.textContent = 'Switch to guided view';
+      nav.style.display = 'none';
+    } else {
+      toggle.textContent = 'Switch to single-page view';
+      nav.style.display = 'flex';
+      showStep(currentStep);
+    }
+    try { localStorage.setItem(STORE_KEY + '_mode', mode); } catch(e){}
+    refreshAll();
+  }
+
+  /* ======================================================
+     master refresh (runs after engine's render)
+     ====================================================== */
+  function refreshAll(){
+    renderSuggestions();
+    renderValidation();
+    renderReview();
+    updateMini();
+  }
+
+  /* ======================================================
+     WIRING
+     ====================================================== */
+  // enhancement layer listens in addition to the engine's own listeners
+  inputsRoot.addEventListener('input', function(){ refreshAll(); saveState(); });
+  inputsRoot.addEventListener('change', function(){ refreshAll(); saveState(); });
+
+  document.getElementById('btnBack').addEventListener('click', function(){ showStep(currentStep - 1); });
+  document.getElementById('btnNext').addEventListener('click', function(){ showStep(currentStep + 1); });
+
+  document.getElementById('viewToggle').addEventListener('click', function(){
+    setMode(layout.getAttribute('data-mode') === 'wizard' ? 'single' : 'wizard');
+  });
+
+  document.getElementById('valBadge').addEventListener('click', function(){
+    var w = document.getElementById('valPanelWrap');
+    w.style.display = (w.style.display === 'none' || !w.style.display) ? 'block' : 'none';
+  });
+
+  document.getElementById('resetBtn').addEventListener('click', function(){
+    if(!confirm('Reset all entries and start over? This clears your saved data on this device.')) return;
+    try { localStorage.removeItem(STORE_KEY); } catch(e){}
+    var els = inputsRoot.querySelectorAll('input');
+    for(var i=0;i<els.length;i++){ els[i].value = ''; els[i].classList.remove('bad'); }
+    // reset selects to their default (first option marked selected, else index 0)
+    var sels = document.querySelectorAll('select');
+    for(var s=0;s<sels.length;s++){
+      var def = sels[s].querySelector('option[selected]');
+      sels[s].value = def ? def.value : sels[s].options[0].value;
+    }
+    render();
+    currentStep = 1;
+    if(layout.getAttribute('data-mode') === 'wizard') showStep(1);
+    refreshAll();
+  });
+
+  // tap-to-toggle tooltips on touch devices
+  document.addEventListener('click', function(e){
+    var tip = e.target.closest ? e.target.closest('.tip') : null;
+    if(tip){ tip.focus(); }
+  });
+
+  /* ---------- boot ---------- */
+  restoreState();
+  render();          // engine recompute with restored values
+  var savedMode = null;
+  try { savedMode = localStorage.getItem(STORE_KEY + '_mode'); } catch(e){}
+  setMode(savedMode === 'single' ? 'single' : 'wizard');
+  showStep(1);
+  refreshAll();
+
+  /* ======================================================
+     8. PWA — service worker + install
+     ====================================================== */
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', function(){
+      navigator.serviceWorker.register('sw.js').catch(function(){ /* offline unavailable, app still works */ });
+    });
+  }
+
+  var deferredPrompt = null;
+  var installBtn = document.getElementById('installBtn');
+  var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+  window.addEventListener('beforeinstallprompt', function(e){
+    e.preventDefault();
+    deferredPrompt = e;
+    if(!isStandalone) installBtn.style.display = '';
+  });
+
+  function iOS(){ return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream; }
+
+  if(!isStandalone && iOS()){
+    installBtn.style.display = '';
+  }
+
+  installBtn.addEventListener('click', function(){
+    if(deferredPrompt){
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(function(){ deferredPrompt = null; installBtn.style.display = 'none'; });
+    } else if(iOS()){
+      alert('To install on iPhone/iPad:\n\n1. Tap the Share button in Safari\n2. Choose "Add to Home Screen"\n3. Tap Add');
+    } else {
+      alert('To install: open your browser menu and choose "Install app" / "Add to Home screen".');
+    }
+  });
+
+  window.addEventListener('appinstalled', function(){ installBtn.style.display = 'none'; });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,634 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>USA Federal + Indiana Income Tax Calculator</title>
+<style>
+:root{
+  --bg:#f4f6f9; --card:#ffffff; --ink:#1a2230; --muted:#5a6474; --line:#e2e7ef;
+  --accent:#2563eb; --accent-ink:#ffffff; --good:#0f7d43; --bad:#c02626;
+  --warn-bg:#fff6e5; --warn-ink:#7a4b00; --warn-line:#f0d089;
+  --field:#ffffff; --field-line:#c9d2e0; --shadow:0 1px 3px rgba(20,30,50,.08),0 4px 16px rgba(20,30,50,.06);
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#0f141c; --card:#1a2230; --ink:#e7ecf4; --muted:#9aa6ba; --line:#2b3648;
+    --accent:#4b8bff; --accent-ink:#0b1220; --good:#4cd08a; --bad:#ff6b6b;
+    --warn-bg:#3a2e12; --warn-ink:#ffcf7a; --warn-line:#6b5320;
+    --field:#0f151f; --field-line:#33415a; --shadow:0 1px 3px rgba(0,0,0,.4),0 6px 22px rgba(0,0,0,.35);
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  line-height:1.5; font-size:15px;
+}
+.wrap{max-width:1080px;margin:0 auto;padding:16px 16px 80px}
+h1{font-size:1.5rem;margin:.2em 0 .1em}
+h2{font-size:1.05rem;margin:0}
+.sub{color:var(--muted);font-size:.9rem;margin:0 0 14px}
+.disclaimer{
+  background:var(--warn-bg);color:var(--warn-ink);border:1px solid var(--warn-line);
+  border-radius:10px;padding:12px 14px;font-size:.86rem;margin:12px 0 18px
+}
+.disclaimer strong{display:block;margin-bottom:3px}
+.topbar{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:14px}
+.topbar .field{min-width:170px}
+button.tool{
+  background:var(--accent);color:var(--accent-ink);border:0;border-radius:8px;
+  padding:10px 16px;font-size:.92rem;font-weight:600;cursor:pointer
+}
+button.tool.ghost{background:transparent;color:var(--accent);border:1px solid var(--field-line)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);margin:0 0 14px;overflow:hidden}
+.card > summary,.card > .cardhead{
+  list-style:none;cursor:pointer;padding:14px 16px;display:flex;justify-content:space-between;
+  align-items:center;gap:10px;font-weight:600
+}
+.card > summary::-webkit-details-marker{display:none}
+.card > summary::after{content:"▾";color:var(--muted);transition:transform .15s}
+details[open] > summary::after{transform:rotate(180deg)}
+.card .body{padding:4px 16px 16px;border-top:1px solid var(--line)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px 16px}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:.82rem;color:var(--muted);font-weight:600}
+.field .hint{font-size:.74rem;color:var(--muted);font-weight:400;margin-top:-2px}
+.field input,.field select{
+  background:var(--field);color:var(--ink);border:1px solid var(--field-line);
+  border-radius:8px;padding:8px 10px;font-size:.95rem;width:100%;font-family:inherit
+}
+.field input:focus,.field select:focus{outline:2px solid var(--accent);outline-offset:0}
+.chk{display:flex;align-items:center;gap:8px;font-size:.85rem}
+.chk input{width:auto}
+.sticky{position:sticky;top:0;z-index:20;background:var(--bg);padding-top:8px}
+.summary{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:12px;
+  background:var(--card);border:1px solid var(--line);border-radius:12px;
+  box-shadow:var(--shadow);padding:14px 16px
+}
+.summary .cell{text-align:center}
+.summary .cell .lbl{font-size:.78rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+.summary .cell .val{font-size:1.35rem;font-weight:700;margin-top:2px}
+.summary .cell.total .val{font-size:1.55rem}
+.pos{color:var(--good)} .neg{color:var(--bad)}
+table.sheet{width:100%;border-collapse:collapse;font-size:.9rem}
+table.sheet td{padding:5px 4px;border-bottom:1px solid var(--line);vertical-align:top}
+table.sheet td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+table.sheet tr.tot td{font-weight:700;border-top:2px solid var(--field-line);border-bottom:none}
+table.sheet tr.sub td{color:var(--muted)}
+table.sheet tr.big td{font-size:1rem;font-weight:700}
+.section-title{font-size:.8rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700;margin:16px 0 4px}
+.help{font-size:.74rem;color:var(--muted)}
+a{color:var(--accent)}
+@media (max-width:620px){.summary{grid-template-columns:1fr}}
+@media print{
+  .noprint{display:none!important}
+  body{background:#fff;color:#000;font-size:12px}
+  .card,.summary{box-shadow:none;border:1px solid #999;break-inside:avoid}
+  details:not([open])>.body{display:block}
+  details>summary::after{display:none}
+  .sticky{position:static}
+}
+</style>
+
+<div class="wrap">
+  <h1>USA Federal + Indiana Income Tax Calculator</h1>
+  <p class="sub">Tax years 2023 - 2025 · Federal (IRS) and Indiana (DOR) · estimator</p>
+
+  <div class="disclaimer">
+    <strong>Read before you rely on this.</strong>
+    This is an estimator for educational use only. It is not a substitute for filing with the IRS/Indiana DOR or advice from a licensed CPA/EA. Verify all figures. Tax-year 2025 amounts are provisional and subject to legislative and inflation adjustments. County tax rates vary — enter your county's rate.
+  </div>
+
+  <div class="topbar noprint">
+    <div class="field">
+      <label for="year">Tax Year</label>
+      <select id="year">
+        <option value="2023">2023</option>
+        <option value="2024" selected>2024</option>
+        <option value="2025">2025 (provisional)</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="status">Filing Status</label>
+      <select id="status">
+        <option value="single">Single</option>
+        <option value="mfj" selected>Married Filing Jointly (MFJ)</option>
+        <option value="mfs">Married Filing Separately (MFS)</option>
+        <option value="hoh">Head of Household (HoH)</option>
+        <option value="qss">Qualifying Surviving Spouse (QSS)</option>
+      </select>
+    </div>
+    <button class="tool" onclick="window.print()">Print / Save as PDF</button>
+  </div>
+
+  <!-- ===================== STICKY SUMMARY ===================== -->
+  <div class="sticky">
+    <div class="summary">
+      <div class="cell"><div class="lbl">Federal</div><div class="val" id="sumFed">$0</div></div>
+      <div class="cell"><div class="lbl">Indiana</div><div class="val" id="sumIN">$0</div></div>
+      <div class="cell total"><div class="lbl">Combined</div><div class="val" id="sumAll">$0</div></div>
+    </div>
+  </div>
+
+  <!-- ===================== FEDERAL INCOME ===================== -->
+  <details class="card" open>
+    <summary><span>1 · Federal Income</span></summary>
+    <div class="body">
+      <div class="grid">
+        <div class="field"><label>W-2 wages (box 1)</label><input type="number" id="wages" value="0" step="any"></div>
+        <div class="field"><label>Interest income</label><input type="number" id="interest" value="0" step="any"></div>
+        <div class="field"><label>Ordinary dividends (total)</label><input type="number" id="ordDiv" value="0" step="any"></div>
+        <div class="field"><label>...of which Qualified dividends</label><input type="number" id="qualDiv" value="0" step="any"><span class="hint">taxed at LTCG rates; must be ≤ ordinary dividends</span></div>
+        <div class="field"><label>Short-term capital gains</label><input type="number" id="stcg" value="0" step="any"><span class="hint">taxed as ordinary income</span></div>
+        <div class="field"><label>Long-term capital gains</label><input type="number" id="ltcg" value="0" step="any"><span class="hint">preferential rates</span></div>
+        <div class="field"><label>IRA / pension distributions (taxable)</label><input type="number" id="pension" value="0" step="any"></div>
+        <div class="field"><label>Social Security benefits received</label><input type="number" id="ssBenefits" value="0" step="any"><span class="hint">taxable portion computed (up to 85%)</span></div>
+        <div class="field"><label>Business / SE net income</label><input type="number" id="bizIncome" value="0" step="any"><span class="hint">flows to income; SE tax computed from SE field below</span></div>
+        <div class="field"><label>Other income</label><input type="number" id="otherInc" value="0" step="any"></div>
+      </div>
+    </div>
+  </details>
+
+  <!-- ===================== ADJUSTMENTS ===================== -->
+  <details class="card">
+    <summary><span>2 · Adjustments to Income (above-the-line)</span></summary>
+    <div class="body">
+      <div class="grid">
+        <div class="field"><label>Educator expenses</label><input type="number" id="adjEducator" value="0" step="any"></div>
+        <div class="field"><label>HSA deduction</label><input type="number" id="adjHSA" value="0" step="any"></div>
+        <div class="field"><label>Deductible IRA</label><input type="number" id="adjIRA" value="0" step="any"></div>
+        <div class="field"><label>Student loan interest</label><input type="number" id="adjStudent" value="0" step="any"><span class="hint">capped at $2,500</span></div>
+        <div class="field"><label>SE health insurance</label><input type="number" id="adjSEHealth" value="0" step="any"></div>
+        <div class="field"><label>Other adjustments</label><input type="number" id="adjOther" value="0" step="any"></div>
+        <div class="field"><label>½ SE tax (auto)</label><input type="number" id="adjHalfSE" value="0" readonly><span class="hint">computed from SE net earnings</span></div>
+      </div>
+    </div>
+  </details>
+
+  <!-- ===================== SE / SS DETAIL ===================== -->
+  <details class="card">
+    <summary><span>3 · Self-Employment</span></summary>
+    <div class="body">
+      <div class="grid">
+        <div class="field"><label>SE net earnings (Schedule C/SE)</label><input type="number" id="seNet" value="0" step="any"><span class="hint">15.3% on 92.35%; SS portion capped at wage base; drives ½ SE adjustment</span></div>
+      </div>
+    </div>
+  </details>
+
+  <!-- ===================== DEDUCTION ===================== -->
+  <details class="card">
+    <summary><span>4 · Deduction (Standard or Itemized)</span></summary>
+    <div class="body">
+      <div class="grid">
+        <div class="field">
+          <label>Deduction method</label>
+          <select id="dedMethod">
+            <option value="auto" selected>Auto (larger)</option>
+            <option value="standard">Force Standard</option>
+            <option value="itemized">Force Itemized</option>
+          </select>
+        </div>
+        <div class="field"><label>Age 65+ count (self+spouse)</label><input type="number" id="age65" value="0" min="0" max="2" step="1"><span class="hint">additional standard deduction each</span></div>
+        <div class="field"><label>Blind count (self+spouse)</label><input type="number" id="blind" value="0" min="0" max="2" step="1"><span class="hint">additional standard deduction each</span></div>
+      </div>
+      <div class="section-title">Itemized (Schedule A)</div>
+      <div class="grid">
+        <div class="field"><label>Medical expenses</label><input type="number" id="itMedical" value="0" step="any"><span class="hint">deductible only above 7.5% of AGI</span></div>
+        <div class="field"><label>State &amp; local taxes (SALT)</label><input type="number" id="itSALT" value="0" step="any"><span class="hint">capped at $10,000</span></div>
+        <div class="field"><label>Home mortgage interest</label><input type="number" id="itMortgage" value="0" step="any"></div>
+        <div class="field"><label>Charitable contributions</label><input type="number" id="itCharity" value="0" step="any"></div>
+        <div class="field"><label>Other itemized</label><input type="number" id="itOther" value="0" step="any"></div>
+      </div>
+    </div>
+  </details>
+
+  <!-- ===================== QBI ===================== -->
+  <details class="card">
+    <summary><span>5 · QBI (Section 199A)</span></summary>
+    <div class="body">
+      <div class="grid">
+        <div class="field"><label>Qualified business income (for QBI 199A)</label><input type="number" id="qbi" value="0" step="any"><span class="hint">simplified: 20% of QBI, limited to 20% of (taxable income before QBI − net capital gains)</span></div>
+      </div>
+    </div>
+  </details>
+
+  <!-- ===================== CREDITS ===================== -->
+  <details class="card">
+    <summary><span>6 · Credits</span></summary>
+    <div class="body">
+      <div class="grid">
+        <div class="field"><label>Qualifying children &lt;17 (CTC)</label><input type="number" id="ctcKids" value="0" min="0" step="1"><span class="hint">$2,000 each; phaseout above MAGI 400k MFJ / 200k others</span></div>
+        <div class="field"><label>Other dependents (ODC)</label><input type="number" id="odcDeps" value="0" min="0" step="1"><span class="hint">$500 each; same phaseout</span></div>
+        <div class="field"><label>Child &amp; dependent care credit</label><input type="number" id="crCare" value="0" step="any"><span class="hint">enter credit amount</span></div>
+        <div class="field"><label>Education credits (AOTC/LLC)</label><input type="number" id="crEdu" value="0" step="any"></div>
+        <div class="field"><label>Earned Income Credit (manual)</label><input type="number" id="crEIC" value="0" step="any"><span class="hint">too complex to auto-compute — see <a href="https://www.irs.gov/credits-deductions/individuals/earned-income-tax-credit-eitc" target="_blank" rel="noopener">IRS EITC tables</a></span></div>
+        <div class="field"><label>Other refundable credits/payments</label><input type="number" id="crOtherRefund" value="0" step="any"></div>
+      </div>
+    </div>
+  </details>
+
+  <!-- ===================== FED PAYMENTS ===================== -->
+  <details class="card">
+    <summary><span>7 · Federal Payments &amp; Withholding</span></summary>
+    <div class="body">
+      <div class="grid">
+        <div class="field"><label>Federal income tax withheld</label><input type="number" id="fedWithheld" value="0" step="any"></div>
+        <div class="field"><label>Estimated tax payments</label><input type="number" id="fedEstimated" value="0" step="any"></div>
+        <div class="field"><label>Net investment income (for NIIT)</label><input type="number" id="niiInput" value="" step="any"><span class="hint">blank = auto (interest+div+cap gains). NIIT 3.8% on lesser of this or MAGI over threshold</span></div>
+      </div>
+    </div>
+  </details>
+
+  <!-- ===================== INDIANA ===================== -->
+  <details class="card">
+    <summary><span>8 · Indiana State (Form IT-40)</span></summary>
+    <div class="body">
+      <p class="help">Indiana starts from Federal AGI. Enter Indiana-specific adjustments below.</p>
+      <div class="grid">
+        <div class="field"><label>Indiana add-backs</label><input type="number" id="inAddback" value="0" step="any"><span class="hint">amounts Indiana adds back (deductions IN disallows). See in.gov/dor Schedule 1</span></div>
+        <div class="field"><label>Taxable Social Security (deductible in IN)</label><input type="number" id="inSSDeduct" value="0" step="any"><span class="hint">federally-taxed SS is not taxed by Indiana</span></div>
+        <div class="field"><label>Renter's deduction</label><input type="number" id="inRenter" value="0" step="any"><span class="hint">max $3,000</span></div>
+        <div class="field"><label>Other Indiana deductions/subtractions</label><input type="number" id="inOtherDeduct" value="0" step="any"></div>
+      </div>
+      <div class="section-title">Indiana exemptions (enter counts)</div>
+      <div class="grid">
+        <div class="field"><label>Taxpayers ($1,000 each)</label><input type="number" id="inTaxpayers" value="1" min="0" max="2" step="1"><span class="hint">1 = single, 2 = MFJ</span></div>
+        <div class="field"><label>Dependents ($1,000 each)</label><input type="number" id="inDeps" value="0" min="0" step="1"></div>
+        <div class="field"><label>Dependent children (extra $1,500 each)</label><input type="number" id="inDepChildren" value="0" min="0" step="1"></div>
+        <div class="field"><label>Age 65+ count ($1,000 each)</label><input type="number" id="inAge65" value="0" min="0" max="2" step="1"></div>
+        <div class="field"><label>Blind count ($1,000 each)</label><input type="number" id="inBlind" value="0" min="0" max="2" step="1"></div>
+      </div>
+      <div class="section-title">Indiana rates, credits &amp; payments</div>
+      <div class="grid">
+        <div class="field"><label>County resident tax rate (%)</label><input type="number" id="inCountyRate" value="" step="any" placeholder="e.g. 2.0"><span class="hint">look up your county rate on in.gov/dor</span></div>
+        <div class="field"><label>Indiana credits (EIC/other, manual)</label><input type="number" id="inCredits" value="0" step="any"></div>
+        <div class="field"><label>Indiana tax withheld</label><input type="number" id="inWithheld" value="0" step="any"></div>
+        <div class="field"><label>Indiana estimated payments</label><input type="number" id="inEstimated" value="0" step="any"></div>
+      </div>
+    </div>
+  </details>
+
+  <!-- ===================== FEDERAL SHEET ===================== -->
+  <details class="card" open>
+    <summary><span>Federal Computation Sheet</span></summary>
+    <div class="body"><table class="sheet"><tbody id="fedSheet"></tbody></table></div>
+  </details>
+
+  <!-- ===================== INDIANA SHEET ===================== -->
+  <details class="card" open>
+    <summary><span>Indiana Computation Sheet</span></summary>
+    <div class="body"><table class="sheet"><tbody id="inSheet"></tbody></table></div>
+  </details>
+
+  <p class="help" style="margin-top:20px">
+    Sources to verify: Federal brackets, standard deductions and LTCG breakpoints — IRS Rev. Proc. inflation releases (irs.gov).
+    Indiana rates, exemptions and county rates — in.gov/dor. 2025 figures are provisional.
+  </p>
+</div>
+
+<script>
+// ==================================================================
+// EDIT RATES HERE — verify against IRS.gov and in.gov/dor before filing. 2025 figures are provisional.
+// ==================================================================
+// One block per tax year. Ordinary brackets are [upper_bound, rate];
+// income above the last listed bound is taxed at 37%. Infinity marks the top band.
+const TAX_DATA = {
+  2023: {
+    provisional: false,
+    standardDeduction: { single:13850, mfj:27700, mfs:13850, hoh:20800, qss:27700 },
+    // additional standard deduction per box (age 65+ / blind)
+    addlStdDeduction: { single:1850, hoh:1850, mfj:1500, mfs:1500, qss:1500 },
+    brackets: {
+      single:[[11000,.10],[44725,.12],[95375,.22],[182100,.24],[231250,.32],[578125,.35],[Infinity,.37]],
+      mfj:   [[22000,.10],[89450,.12],[190750,.22],[364200,.24],[462500,.32],[693750,.35],[Infinity,.37]],
+      qss:   [[22000,.10],[89450,.12],[190750,.22],[364200,.24],[462500,.32],[693750,.35],[Infinity,.37]],
+      mfs:   [[11000,.10],[44725,.12],[95375,.22],[182100,.24],[231250,.32],[346875,.35],[Infinity,.37]],
+      hoh:   [[15700,.10],[59850,.12],[95350,.22],[182100,.24],[231250,.32],[578100,.35],[Infinity,.37]]
+    },
+    // LTCG / qualified dividends breakpoints (taxable income): [0%-upto, 15%-upto]; above = 20%
+    ltcg: { single:[44625,492300], mfj:[89250,553850], qss:[89250,553850], hoh:[59750,523050], mfs:[44625,276900] },
+    ssWageBase: 160200,
+    indiana: { stateRate:0.0315 }  // Indiana flat rate 2023 = 3.15%
+  },
+  2024: {
+    provisional: false,
+    standardDeduction: { single:14600, mfj:29200, mfs:14600, hoh:21900, qss:29200 },
+    addlStdDeduction: { single:1950, hoh:1950, mfj:1550, mfs:1550, qss:1550 },
+    brackets: {
+      single:[[11600,.10],[47150,.12],[100525,.22],[191950,.24],[243725,.32],[609350,.35],[Infinity,.37]],
+      mfj:   [[23200,.10],[94300,.12],[201050,.22],[383900,.24],[487450,.32],[731200,.35],[Infinity,.37]],
+      qss:   [[23200,.10],[94300,.12],[201050,.22],[383900,.24],[487450,.32],[731200,.35],[Infinity,.37]],
+      mfs:   [[11600,.10],[47150,.12],[100525,.22],[191950,.24],[243725,.32],[365600,.35],[Infinity,.37]],
+      hoh:   [[16550,.10],[63100,.12],[100500,.22],[191950,.24],[243700,.32],[609350,.35],[Infinity,.37]]
+    },
+    ltcg: { single:[47025,518900], mfj:[94050,583750], qss:[94050,583750], hoh:[63000,551350], mfs:[47025,291850] },
+    ssWageBase: 168600,
+    indiana: { stateRate:0.0305 }  // Indiana flat rate 2024 = 3.05%
+  },
+  2025: {
+    provisional: true,   // <-- 2025 amounts are PROVISIONAL (inflation-projected)
+    standardDeduction: { single:15750, mfj:31500, mfs:15750, hoh:23625, qss:31500 },
+    addlStdDeduction: { single:2000, hoh:2000, mfj:1600, mfs:1600, qss:1600 },
+    brackets: {
+      single:[[11925,.10],[48475,.12],[103350,.22],[197300,.24],[250525,.32],[626350,.35],[Infinity,.37]],
+      mfj:   [[23850,.10],[96950,.12],[206700,.22],[394600,.24],[501050,.32],[751600,.35],[Infinity,.37]],
+      qss:   [[23850,.10],[96950,.12],[206700,.22],[394600,.24],[501050,.32],[751600,.35],[Infinity,.37]],
+      mfs:   [[11925,.10],[48475,.12],[103350,.22],[197300,.24],[250525,.32],[375800,.35],[Infinity,.37]],
+      hoh:   [[17000,.10],[64850,.12],[103350,.22],[197300,.24],[250500,.32],[626350,.35],[Infinity,.37]]
+    },
+    ltcg: { single:[48350,533400], mfj:[96700,600050], qss:[96700,600050], hoh:[64750,566700], mfs:[48350,300000] },
+    ssWageBase: 176100,
+    indiana: { stateRate:0.0300 }  // Indiana flat rate 2025 = 3.00% (PROVISIONAL)
+  }
+};
+
+// NIIT / Additional Medicare Tax MAGI thresholds (same all years)
+const SURTAX_THRESHOLDS = { single:200000, hoh:200000, mfj:250000, qss:250000, mfs:125000 };
+const SE_RATE_SS = 0.124, SE_RATE_MED = 0.029, SE_BASE_FACTOR = 0.9235;
+
+// ------------------------------------------------------------------
+// Helpers
+// ------------------------------------------------------------------
+const $ = id => document.getElementById(id);
+const num = id => { const v = parseFloat($(id).value); return isNaN(v) ? 0 : v; };
+const usd = n => { const neg = n < 0; n = Math.round(Math.abs(n)); return (neg?'-$':'$') + n.toLocaleString('en-US'); };
+
+// progressive tax from an ordered bracket table
+function taxFromBrackets(income, brackets){
+  if(income <= 0) return 0;
+  let tax = 0, lower = 0;
+  for(const [upper, rate] of brackets){
+    if(income > lower){
+      const band = Math.min(income, upper) - lower;
+      tax += band * rate;
+      lower = upper;
+    } else break;
+  }
+  return tax;
+}
+
+// Taxable Social Security via IRS provisional-income worksheet (simplified but standard)
+function taxableSocialSecurity(ssBenefits, otherIncome, status){
+  if(ssBenefits <= 0) return 0;
+  const halfSS = ssBenefits * 0.5;
+  const provisional = otherIncome + halfSS;
+  const mfjLike = (status === 'mfj' || status === 'qss');
+  const base1 = mfjLike ? 32000 : 25000;
+  const base2 = mfjLike ? 44000 : 34000;
+  if(provisional <= base1) return 0;
+  let taxable;
+  if(provisional <= base2){
+    taxable = Math.min(0.5 * (provisional - base1), halfSS);
+  } else {
+    const tier2 = 0.85 * (provisional - base2);
+    const tier1 = Math.min(0.5 * (provisional - base1), (mfjLike?6000:4500));
+    taxable = tier2 + tier1;
+  }
+  return Math.min(taxable, 0.85 * ssBenefits);
+}
+
+// Preferential tax on qualified income (LTCG + qualified dividends) stacked on top of ordinary
+function preferentialTax(ordinaryTaxable, qualified, brk){
+  if(qualified <= 0) return 0;
+  const [b0, b15] = brk;   // 0% up to b0, 15% up to b15, else 20%
+  const start = ordinaryTaxable;          // qualified stacks on top
+  const end = ordinaryTaxable + qualified;
+  let tax = 0;
+  // 0% band
+  const zeroTop = Math.max(start, Math.min(end, b0));
+  // 15% band
+  const fifteenTop = Math.max(zeroTop, Math.min(end, b15));
+  const amt15 = fifteenTop - zeroTop;
+  const amt20 = end - fifteenTop;
+  tax += Math.max(0, amt15) * 0.15;
+  tax += Math.max(0, amt20) * 0.20;
+  return tax;
+}
+
+// ------------------------------------------------------------------
+// Main calculation
+// ------------------------------------------------------------------
+function calc(){
+  const year = $('year').value;
+  const status = $('status').value;
+  const Y = TAX_DATA[year];
+  const stKey = status; // keys align
+
+  // ---- Self-employment tax ----
+  const seNet = num('seNet');
+  const seBase = seNet > 0 ? seNet * SE_BASE_FACTOR : 0;
+  const ssPortion = Math.min(seBase, Y.ssWageBase) * SE_RATE_SS;
+  const medPortion = seBase * SE_RATE_MED;
+  const seTax = ssPortion + medPortion;
+  const halfSE = seTax / 2;
+  $('adjHalfSE').value = Math.round(halfSE);
+
+  // ---- Income ----
+  const wages = num('wages');
+  const interest = num('interest');
+  const ordDiv = num('ordDiv');
+  const qualDiv = Math.min(num('qualDiv'), ordDiv);
+  const stcg = num('stcg');
+  const ltcg = num('ltcg');
+  const pension = num('pension');
+  const bizIncome = num('bizIncome');
+  const otherInc = num('otherInc');
+  const ssBenefits = num('ssBenefits');
+
+  // income excluding SS, used for provisional-income worksheet
+  const incomeExSS = wages + interest + ordDiv + stcg + ltcg + pension + bizIncome + otherInc;
+  const taxableSS = taxableSocialSecurity(ssBenefits, incomeExSS, status);
+
+  const totalIncome = incomeExSS + taxableSS;
+
+  // ---- Adjustments ----
+  const adjStudent = Math.min(num('adjStudent'), 2500);
+  const adjustments = num('adjEducator') + num('adjHSA') + num('adjIRA') + adjStudent +
+                      num('adjSEHealth') + num('adjOther') + halfSE;
+  const agi = totalIncome - adjustments;
+
+  // ---- Deduction ----
+  const stdBase = Y.standardDeduction[stKey];
+  const addlUnit = Y.addlStdDeduction[stKey];
+  const addlBoxes = Math.min(num('age65'),2) + Math.min(num('blind'),2);
+  const stdDeduction = stdBase + addlBoxes * addlUnit;
+
+  const medical = Math.max(0, num('itMedical') - 0.075 * agi);
+  const salt = Math.min(num('itSALT'), 10000);
+  const itemized = medical + salt + num('itMortgage') + num('itCharity') + num('itOther');
+
+  const method = $('dedMethod').value;
+  let deduction, dedLabel;
+  if(method === 'standard'){ deduction = stdDeduction; dedLabel = 'Standard deduction'; }
+  else if(method === 'itemized'){ deduction = itemized; dedLabel = 'Itemized deductions'; }
+  else { // auto
+    if(itemized > stdDeduction){ deduction = itemized; dedLabel = 'Itemized deductions (auto)'; }
+    else { deduction = stdDeduction; dedLabel = 'Standard deduction (auto)'; }
+  }
+
+  const taxableBeforeQBI = Math.max(0, agi - deduction);
+
+  // ---- QBI (simplified) ----
+  const qbiInput = num('qbi');
+  const netCapGains = Math.max(0, ltcg) + qualDiv; // preferential income
+  const qbiDed = Math.max(0, Math.min(0.20 * qbiInput, 0.20 * Math.max(0, taxableBeforeQBI - netCapGains)));
+
+  const taxableIncome = Math.max(0, taxableBeforeQBI - qbiDed);
+
+  // ---- Income tax: split preferential vs ordinary ----
+  const preferential = Math.min(netCapGains, taxableIncome); // qualified div + LTCG portion in taxable income
+  const ordinaryTaxable = Math.max(0, taxableIncome - preferential);
+  const ordinaryTax = taxFromBrackets(ordinaryTaxable, Y.brackets[stKey]);
+  const prefTax = preferentialTax(ordinaryTaxable, preferential, Y.ltcg[stKey]);
+  const incomeTax = ordinaryTax + prefTax;
+
+  // ---- MAGI for phaseouts/surtaxes (approx = AGI) ----
+  const magi = agi;
+  const surThresh = SURTAX_THRESHOLDS[stKey];
+
+  // ---- Nonrefundable credits ----
+  const ctcKids = Math.max(0, Math.floor(num('ctcKids')));
+  const odcDeps = Math.max(0, Math.floor(num('odcDeps')));
+  let ctcRaw = ctcKids * 2000 + odcDeps * 500;
+  const ctcThreshold = (status === 'mfj') ? 400000 : 200000;
+  if(magi > ctcThreshold){
+    const over = Math.ceil((magi - ctcThreshold) / 1000) * 1000;
+    ctcRaw = Math.max(0, ctcRaw - (over / 1000) * 50);
+  }
+  const crCare = num('crCare');
+  const crEdu = num('crEdu');
+  const nonRefundable = ctcRaw + crCare + crEdu;
+  const taxAfterCredits = Math.max(0, incomeTax - nonRefundable);
+
+  // ---- Other taxes ----
+  const earnedIncome = wages + (seBase); // wages + net SE earnings (approx)
+  const addlMedicare = Math.max(0, earnedIncome - surThresh) * 0.009;
+  const netInvIncomeAuto = interest + ordDiv + Math.max(0, stcg) + Math.max(0, ltcg);
+  const niiField = $('niiInput').value.trim();
+  const netInvIncome = niiField === '' ? netInvIncomeAuto : (parseFloat(niiField)||0);
+  const niit = Math.max(0, Math.min(netInvIncome, Math.max(0, magi - surThresh))) * 0.038;
+
+  const otherTaxes = seTax + addlMedicare + niit;
+  const totalTax = taxAfterCredits + otherTaxes;
+
+  // ---- Payments & refundable credits ----
+  const crEIC = num('crEIC');
+  const crOtherRefund = num('crOtherRefund');
+  const fedWithheld = num('fedWithheld');
+  const fedEstimated = num('fedEstimated');
+  const totalPayments = crEIC + crOtherRefund + fedWithheld + fedEstimated;
+
+  const fedResult = totalPayments - totalTax; // positive = refund
+
+  // ================= INDIANA =================
+  const inAddback = num('inAddback');
+  const inSSDeduct = num('inSSDeduct');
+  const inRenter = Math.min(num('inRenter'), 3000);
+  const inOtherDeduct = num('inOtherDeduct');
+  const inDeductions = inSSDeduct + inRenter + inOtherDeduct;
+
+  const exTaxpayers = Math.min(num('inTaxpayers'),2) * 1000;
+  const exDeps = Math.max(0,Math.floor(num('inDeps'))) * 1000;
+  const exDepChildren = Math.max(0,Math.floor(num('inDepChildren'))) * 1500;
+  const exAge = Math.min(num('inAge65'),2) * 1000;
+  const exBlind = Math.min(num('inBlind'),2) * 1000;
+  const inExemptions = exTaxpayers + exDeps + exDepChildren + exAge + exBlind;
+
+  const inTaxable = Math.max(0, agi + inAddback - inDeductions - inExemptions);
+
+  const inStateRate = Y.indiana.stateRate;
+  const inStateTax = inTaxable * inStateRate;
+  const countyRatePct = $('inCountyRate').value.trim();
+  const countyRate = countyRatePct === '' ? 0 : (parseFloat(countyRatePct)||0)/100;
+  const inCountyTax = inTaxable * countyRate;
+
+  const inCredits = num('inCredits');
+  const inWithheld = num('inWithheld');
+  const inEstimated = num('inEstimated');
+  const inTotalTax = Math.max(0, inStateTax + inCountyTax - inCredits);
+  const inPayments = inWithheld + inEstimated;
+  const inResult = inPayments - inTotalTax; // positive = refund
+
+  // ================= RENDER SUMMARY =================
+  const resWord = v => v >= 0 ? 'refund' : 'owed';
+  const cls = v => v >= 0 ? 'pos' : 'neg';
+  $('sumFed').innerHTML = '<span class="'+cls(fedResult)+'">'+usd(Math.abs(fedResult))+'</span><div class="lbl">'+resWord(fedResult)+'</div>';
+  $('sumIN').innerHTML  = '<span class="'+cls(inResult)+'">'+usd(Math.abs(inResult))+'</span><div class="lbl">'+resWord(inResult)+'</div>';
+  const combined = fedResult + inResult;
+  $('sumAll').innerHTML = '<span class="'+cls(combined)+'">'+usd(Math.abs(combined))+'</span><div class="lbl">net '+resWord(combined)+'</div>';
+
+  // ================= FEDERAL SHEET =================
+  const row = (label, val, klass='') => '<tr class="'+klass+'"><td>'+label+'</td><td class="num">'+usd(val)+'</td></tr>';
+  const rowTxt = (label, txt, klass='') => '<tr class="'+klass+'"><td>'+label+'</td><td class="num">'+txt+'</td></tr>';
+  let f = '';
+  f += '<tr class="sub"><td colspan="2">Income</td></tr>';
+  f += row('W-2 wages', wages);
+  f += row('Interest', interest);
+  f += row('Ordinary dividends', ordDiv);
+  f += row('Short-term capital gains', stcg);
+  f += row('Long-term capital gains', ltcg);
+  f += row('IRA / pension (taxable)', pension);
+  f += row('Taxable Social Security', taxableSS);
+  f += row('Business / SE income', bizIncome);
+  f += row('Other income', otherInc);
+  f += row('Total income', totalIncome, 'tot');
+  f += row('Adjustments to income', -adjustments);
+  f += row('Adjusted Gross Income (AGI)', agi, 'tot');
+  f += rowTxt('Less: '+dedLabel, usd(-deduction));
+  f += row('QBI deduction (199A)', -qbiDed);
+  f += row('Taxable income', taxableIncome, 'tot');
+  f += '<tr class="sub"><td colspan="2">Tax</td></tr>';
+  f += row('Ordinary income tax', ordinaryTax);
+  f += row('Preferential (LTCG/qual div) tax', prefTax);
+  f += row('Tax before credits', incomeTax, 'tot');
+  f += row('Child tax credit + ODC', -ctcRaw);
+  f += row('Child &amp; dependent care', -crCare);
+  f += row('Education credits', -crEdu);
+  f += row('Tax after nonrefundable credits', taxAfterCredits, 'tot');
+  f += '<tr class="sub"><td colspan="2">Other taxes</td></tr>';
+  f += row('Self-employment tax', seTax);
+  f += row('Additional Medicare (0.9%)', addlMedicare);
+  f += row('Net Investment Income Tax (3.8%)', niit);
+  f += row('TOTAL TAX', totalTax, 'big');
+  f += '<tr class="sub"><td colspan="2">Payments</td></tr>';
+  f += row('Federal withholding', fedWithheld);
+  f += row('Estimated payments', fedEstimated);
+  f += row('EIC (manual)', crEIC);
+  f += row('Other refundable credits/payments', crOtherRefund);
+  f += row('Total payments', totalPayments, 'tot');
+  f += rowTxt((fedResult>=0?'FEDERAL REFUND':'FEDERAL AMOUNT OWED'),
+        '<span class="'+cls(fedResult)+'">'+usd(Math.abs(fedResult))+'</span>', 'big');
+  $('fedSheet').innerHTML = f;
+
+  // ================= INDIANA SHEET =================
+  let g = '';
+  g += row('Federal AGI (start)', agi);
+  g += row('Indiana add-backs', inAddback);
+  g += '<tr class="sub"><td colspan="2">Indiana deductions</td></tr>';
+  g += row('Taxable Social Security (deductible)', -inSSDeduct);
+  g += row("Renter's deduction (max 3,000)", -inRenter);
+  g += row('Other Indiana deductions', -inOtherDeduct);
+  g += '<tr class="sub"><td colspan="2">Indiana exemptions</td></tr>';
+  g += row('Taxpayers ($1,000 ea)', -exTaxpayers);
+  g += row('Dependents ($1,000 ea)', -exDeps);
+  g += row('Dependent children ($1,500 ea)', -exDepChildren);
+  g += row('Age 65+ ($1,000 ea)', -exAge);
+  g += row('Blind ($1,000 ea)', -exBlind);
+  g += row('Indiana taxable income', inTaxable, 'tot');
+  g += rowTxt('State tax ('+(inStateRate*100).toFixed(2)+'%)', usd(inStateTax));
+  g += rowTxt('County tax ('+(countyRate*100).toFixed(2)+'%)', usd(inCountyTax));
+  g += row('Indiana credits', -inCredits);
+  g += row('Indiana total tax', inTotalTax, 'tot');
+  g += row('Indiana withholding', inWithheld);
+  g += row('Indiana estimated payments', inEstimated);
+  g += row('Total Indiana payments', inPayments, 'tot');
+  g += rowTxt((inResult>=0?'INDIANA REFUND':'INDIANA AMOUNT OWED'),
+        '<span class="'+cls(inResult)+'">'+usd(Math.abs(inResult))+'</span>', 'big');
+  $('inSheet').innerHTML = g;
+}
+
+// live recalc
+document.addEventListener('input', calc);
+document.addEventListener('change', calc);
+calc();
+</script>

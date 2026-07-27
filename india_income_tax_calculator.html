@@ -1,0 +1,752 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>India Income Tax Calculator (ITR-2/ITR-3 level)</title>
+<style>
+  :root{
+    --bg:#f4f6fb; --card:#ffffff; --ink:#1b2130; --muted:#5c6579; --line:#e2e6ef;
+    --brand:#1f6feb; --brand-ink:#ffffff; --good:#0a7d33; --bad:#c0392b;
+    --accent:#eef4ff; --shadow:0 1px 3px rgba(20,30,60,.08),0 8px 24px rgba(20,30,60,.06);
+    --radius:14px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0f1420; --card:#171d2b; --ink:#e8ecf6; --muted:#9aa6bd; --line:#28303f;
+      --brand:#4f8cf0; --brand-ink:#08111f; --good:#4cd07a; --bad:#ff6b5e;
+      --accent:#1a2436; --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg); color:var(--ink); line-height:1.45; font-size:15px;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:18px 18px 80px}
+  h1{font-size:1.4rem;margin:.2rem 0}
+  h2{font-size:1.02rem;margin:0}
+  .sub{color:var(--muted);font-size:.85rem;margin-top:2px}
+  .disclaimer{
+    background:#fff8e6;color:#5c4708;border:1px solid #f0d98a;border-radius:12px;
+    padding:12px 14px;margin:12px 0 18px;font-size:.85rem;
+  }
+  @media (prefers-color-scheme: dark){.disclaimer{background:#2a2410;color:#f0d98a;border-color:#5a4d18}}
+  .layout{display:grid;grid-template-columns:1fr 360px;gap:20px;align-items:start}
+  @media (max-width:920px){.layout{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden}
+  details.card>summary{cursor:pointer;list-style:none;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;font-weight:600;user-select:none}
+  details.card>summary::-webkit-details-marker{display:none}
+  details.card>summary .chev{transition:transform .2s;color:var(--muted)}
+  details.card[open]>summary .chev{transform:rotate(90deg)}
+  .body{padding:6px 16px 16px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
+  @media (max-width:560px){.grid{grid-template-columns:1fr}}
+  .field{display:flex;flex-direction:column;gap:4px;margin:6px 0}
+  .field label{font-size:.82rem;color:var(--muted)}
+  .field .help{font-size:.72rem;color:var(--muted);opacity:.85}
+  input,select{
+    font:inherit;padding:9px 10px;border:1px solid var(--line);border-radius:9px;
+    background:var(--bg);color:var(--ink);width:100%;
+  }
+  input:focus,select:focus{outline:2px solid var(--brand);outline-offset:0;border-color:var(--brand)}
+  input[readonly]{opacity:.7;cursor:not-allowed}
+  .toprow{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
+  .toprow .field{flex:1 1 180px}
+  .oldonly{position:relative}
+  .badge{display:inline-block;font-size:.65rem;padding:1px 6px;border-radius:20px;background:var(--accent);color:var(--brand);border:1px solid var(--line);margin-left:6px;vertical-align:middle}
+  .muted-note{font-size:.75rem;color:var(--muted);margin:2px 0 10px}
+  .subtotal{display:flex;justify-content:space-between;padding:8px 10px;background:var(--accent);border-radius:9px;font-weight:600;margin-top:6px}
+  /* results panel */
+  .results{position:sticky;top:14px}
+  .rescard{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
+  .rrow{display:flex;justify-content:space-between;gap:10px;padding:5px 0;font-size:.86rem;border-bottom:1px dashed var(--line)}
+  .rrow:last-child{border-bottom:0}
+  .rrow.big{font-size:1.05rem;font-weight:700;border-bottom:0;padding-top:10px}
+  .rrow .lbl{color:var(--muted)}
+  .pill{padding:10px 12px;border-radius:10px;text-align:center;font-weight:700;margin-top:8px}
+  .pill.refund{background:rgba(10,125,51,.12);color:var(--good)}
+  .pill.payable{background:rgba(192,57,43,.12);color:var(--bad)}
+  .cmp{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
+  .cmpcol{border:1px solid var(--line);border-radius:11px;padding:10px}
+  .cmpcol.win{border-color:var(--good);box-shadow:0 0 0 2px rgba(10,125,51,.18)}
+  .cmpcol h3{margin:0 0 6px;font-size:.85rem;display:flex;justify-content:space-between;align-items:center}
+  .cmpcol .amt{font-size:1.1rem;font-weight:800}
+  .reco{margin-top:10px;padding:10px;border-radius:10px;background:var(--accent);font-size:.82rem}
+  .btns{display:flex;gap:8px;margin-top:12px}
+  button{font:inherit;font-weight:600;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:9px 12px;border-radius:9px;cursor:pointer;flex:1}
+  button.primary{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
+  .propblock{border:1px dashed var(--line);border-radius:10px;padding:8px 10px;margin:8px 0}
+  .propblock h4{margin:2px 0 4px;font-size:.82rem}
+  @media print{
+    body{background:#fff;color:#000;font-size:12px}
+    .no-print,details.card>summary .chev{display:none!important}
+    details.card{border:1px solid #ccc;box-shadow:none;page-break-inside:avoid}
+    details.card:not([open])>.body{display:block!important}
+    .layout{display:block}
+    .results{position:static}
+    .rescard{border:1px solid #ccc;box-shadow:none}
+    input,select{border:1px solid #ccc;background:#fff;color:#000}
+    .disclaimer{background:#fff;border:1px solid #999;color:#000}
+  }
+</style>
+
+<div class="wrap">
+  <div class="no-print" style="display:flex;justify-content:space-between;align-items:end;flex-wrap:wrap;gap:10px">
+    <div>
+      <h1>India Individual Income Tax Calculator</h1>
+      <div class="sub">ITR-2 / ITR-3 level &middot; Old &amp; New regime &middot; AY 2024-25 / 2025-26 / 2026-27</div>
+    </div>
+  </div>
+
+  <div class="disclaimer">
+    <strong>Disclaimer:</strong> This is an estimator for educational use only. It is not a substitute for official
+    e-filing on the Income Tax portal or advice from a qualified Chartered Accountant. Verify all figures.
+    FY 2025-26 (AY 2026-27) figures reflect Budget 2025 and may be subject to change.
+  </div>
+
+  <div class="layout">
+    <!-- ============ LEFT: INPUTS ============ -->
+    <div id="inputs">
+
+      <!-- A. Filing details -->
+      <div class="card">
+        <div class="body">
+          <h2>A. Filing details</h2>
+          <div class="muted-note">Choose Assessment Year, status and tax regime. Everything recalculates live.</div>
+          <div class="toprow">
+            <div class="field">
+              <label for="ay">Assessment Year</label>
+              <select id="ay">
+                <option value="2026-27" selected>AY 2026-27 (FY 2025-26)</option>
+                <option value="2025-26">AY 2025-26 (FY 2024-25)</option>
+                <option value="2024-25">AY 2024-25 (FY 2023-24)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="status">Residential status</label>
+              <select id="status">
+                <option value="resident">Resident</option>
+                <option value="rnor">Resident but Not Ordinarily Resident (RNOR)</option>
+                <option value="nri">Non-resident (NRI)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="age">Age category <span class="badge">Old regime exemption</span></label>
+              <select id="age">
+                <option value="below60">Below 60</option>
+                <option value="senior">Senior (60 – 80)</option>
+                <option value="super">Super senior (80+)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="regime">Tax regime</label>
+              <select id="regime">
+                <option value="compare" selected>Compare both — recommend cheaper</option>
+                <option value="new">New regime</option>
+                <option value="old">Old regime</option>
+              </select>
+            </div>
+          </div>
+          <div class="muted-note" id="nriNote"></div>
+        </div>
+      </div>
+
+      <!-- B. Salary -->
+      <details class="card" open>
+        <summary>B. Salary — Schedule S <span class="chev">&#9654;</span></summary>
+        <div class="body">
+          <div class="grid">
+            <div class="field"><label>Gross salary (before exemptions)</label><input type="number" inputmode="numeric" id="grossSalary" min="0" placeholder="0"></div>
+            <div class="field oldonly"><label>Professional tax paid u/s 16 <span class="badge">Old only</span></label><input type="number" inputmode="numeric" id="profTax" min="0" placeholder="0"></div>
+          </div>
+
+          <div class="propblock oldonly">
+            <h4>HRA exemption sub-calculator <span class="badge">Old only</span></h4>
+            <div class="grid">
+              <div class="field"><label>Basic + DA (annual)</label><input type="number" inputmode="numeric" id="hraBasic" min="0" placeholder="0"></div>
+              <div class="field"><label>HRA received (annual)</label><input type="number" inputmode="numeric" id="hraReceived" min="0" placeholder="0"></div>
+              <div class="field"><label>Total rent paid (annual)</label><input type="number" inputmode="numeric" id="hraRent" min="0" placeholder="0"></div>
+              <div class="field"><label>Metro city (Delhi/Mumbai/Kolkata/Chennai)?</label>
+                <select id="hraMetro"><option value="yes">Yes (50%)</option><option value="no" selected>No (40%)</option></select></div>
+            </div>
+            <div class="subtotal"><span>Exempt HRA</span><span id="hraExemptOut">₹0</span></div>
+          </div>
+
+          <div class="grid oldonly">
+            <div class="field"><label>LTA exempt <span class="badge">Old only</span></label><input type="number" inputmode="numeric" id="lta" min="0" placeholder="0"></div>
+            <div class="field"><label>Other exempt allowances <span class="badge">Old only</span></label><input type="number" inputmode="numeric" id="otherExempt" min="0" placeholder="0"></div>
+          </div>
+
+          <div class="subtotal"><span>Standard deduction (auto per regime)</span><span id="stdDedOut">₹0</span></div>
+          <div class="subtotal"><span>Income from Salary</span><span id="salaryOut">₹0</span></div>
+        </div>
+      </details>
+
+      <!-- C. House property -->
+      <details class="card">
+        <summary>C. House Property — Schedule HP <span class="chev">&#9654;</span></summary>
+        <div class="body">
+          <div class="muted-note">Self-occupied loan interest capped at ₹2,00,000. Overall HP loss set-off against other heads capped at ₹2,00,000. New regime: self-occupied interest not allowed and HP loss cannot be set off.</div>
+          <div class="propblock">
+            <h4>Property 1</h4>
+            <div class="grid">
+              <div class="field"><label>Type</label><select id="hp1type"><option value="sop">Self-occupied</option><option value="let">Let-out</option></select></div>
+              <div class="field"><label>Annual rent received</label><input type="number" inputmode="numeric" id="hp1rent" min="0" placeholder="0"></div>
+              <div class="field"><label>Municipal taxes paid</label><input type="number" inputmode="numeric" id="hp1mun" min="0" placeholder="0"></div>
+              <div class="field"><label>Home loan interest u/s 24(b)</label><input type="number" inputmode="numeric" id="hp1int" min="0" placeholder="0"></div>
+            </div>
+          </div>
+          <div class="propblock">
+            <h4>Property 2</h4>
+            <div class="grid">
+              <div class="field"><label>Type</label><select id="hp2type"><option value="none" selected>— none —</option><option value="sop">Self-occupied</option><option value="let">Let-out</option></select></div>
+              <div class="field"><label>Annual rent received</label><input type="number" inputmode="numeric" id="hp2rent" min="0" placeholder="0"></div>
+              <div class="field"><label>Municipal taxes paid</label><input type="number" inputmode="numeric" id="hp2mun" min="0" placeholder="0"></div>
+              <div class="field"><label>Home loan interest u/s 24(b)</label><input type="number" inputmode="numeric" id="hp2int" min="0" placeholder="0"></div>
+            </div>
+          </div>
+          <div class="subtotal"><span>Net Income from House Property</span><span id="hpOut">₹0</span></div>
+        </div>
+      </details>
+
+      <!-- D. Capital gains -->
+      <details class="card">
+        <summary>D. Capital Gains — Schedule CG <span class="chev">&#9654;</span></summary>
+        <div class="body">
+          <div class="muted-note">Rate-change caveat: for transfers <strong>on/after 23-Jul-2024</strong> equity STCG (111A) is 20% (was 15%) and equity LTCG (112A) is 12.5% (was 10%). LTCG 112A exemption: ₹1,25,000 (AY 2025-26+), else ₹1,00,000.</div>
+          <div class="grid">
+            <div class="field"><label id="cgPeriodLbl">Equity transfer period</label>
+              <select id="cgPeriod"><option value="post">On/after 23-Jul-2024</option><option value="pre">Before 23-Jul-2024</option></select>
+              <span class="help" id="cgPeriodHelp"></span></div>
+            <div class="field"><label>Equity STCG u/s 111A (STT-paid)</label><input type="number" inputmode="numeric" id="stcg111a" min="0" placeholder="0"></div>
+            <div class="field"><label>Equity LTCG u/s 112A (before exemption)</label><input type="number" inputmode="numeric" id="ltcg112a" min="0" placeholder="0"></div>
+            <div class="field"><label>Other short-term gains (taxed at slab)</label><input type="number" inputmode="numeric" id="stcgOther" min="0" placeholder="0"></div>
+            <div class="field"><label>Other long-term gains (taxed at 20%)</label><input type="number" inputmode="numeric" id="ltcgOther" min="0" placeholder="0"></div>
+          </div>
+          <div class="subtotal"><span>LTCG 112A exemption applied</span><span id="ltcgExemptOut">₹0</span></div>
+        </div>
+      </details>
+
+      <!-- E. Business -->
+      <details class="card">
+        <summary>E. Business / Profession — Schedule BP <span class="chev">&#9654;</span></summary>
+        <div class="body">
+          <div class="grid">
+            <div class="field"><label>Net profit (normal books)</label><input type="number" inputmode="numeric" id="bpNet" min="0" placeholder="0"></div>
+          </div>
+          <div class="propblock">
+            <h4>Presumptive 44AD (business)</h4>
+            <div class="grid">
+              <div class="field"><label>Turnover received digitally (@6%)</label><input type="number" inputmode="numeric" id="ad44Digital" min="0" placeholder="0"></div>
+              <div class="field"><label>Turnover received in cash (@8%)</label><input type="number" inputmode="numeric" id="ad44Cash" min="0" placeholder="0"></div>
+            </div>
+            <div class="subtotal"><span>Deemed profit 44AD</span><span id="ad44Out">₹0</span></div>
+          </div>
+          <div class="propblock">
+            <h4>Presumptive 44ADA (profession)</h4>
+            <div class="grid">
+              <div class="field"><label>Gross receipts (@50%)</label><input type="number" inputmode="numeric" id="ada44Gross" min="0" placeholder="0"></div>
+            </div>
+            <div class="subtotal"><span>Deemed profit 44ADA</span><span id="ada44Out">₹0</span></div>
+          </div>
+          <div class="subtotal"><span>Income from Business / Profession</span><span id="bpOut">₹0</span></div>
+        </div>
+      </details>
+
+      <!-- F. Other sources -->
+      <details class="card">
+        <summary>F. Income from Other Sources <span class="chev">&#9654;</span></summary>
+        <div class="body">
+          <div class="grid">
+            <div class="field"><label>Savings account interest</label><input type="number" inputmode="numeric" id="osSaving" min="0" placeholder="0"></div>
+            <div class="field"><label>FD / other interest</label><input type="number" inputmode="numeric" id="osFD" min="0" placeholder="0"></div>
+            <div class="field"><label>Dividends</label><input type="number" inputmode="numeric" id="osDiv" min="0" placeholder="0"></div>
+            <div class="field"><label>Other income</label><input type="number" inputmode="numeric" id="osOther" min="0" placeholder="0"></div>
+          </div>
+          <div class="subtotal"><span>Income from Other Sources</span><span id="osOut">₹0</span></div>
+        </div>
+      </details>
+
+      <!-- G. Deductions -->
+      <details class="card">
+        <summary>G. Deductions — Chapter VI-A <span class="chev">&#9654;</span></summary>
+        <div class="body">
+          <div class="muted-note oldonly">New regime disallows these <strong>except</strong> 80CCD(2) employer NPS (and standard deduction). Values below are used only in the Old regime, except 80CCD(2).</div>
+          <div class="grid">
+            <div class="field"><label>80C (LIC, PPF, ELSS, EPF…) — cap ₹1,50,000</label><input type="number" inputmode="numeric" id="d80c" min="0" placeholder="0"></div>
+            <div class="field"><label>80CCC (pension fund) — shares 1.5L cap</label><input type="number" inputmode="numeric" id="d80ccc" min="0" placeholder="0"></div>
+            <div class="field"><label>80CCD(1) self NPS — shares 1.5L cap</label><input type="number" inputmode="numeric" id="d80ccd1" min="0" placeholder="0"></div>
+            <div class="field"><label>80CCD(1B) NPS extra — cap ₹50,000</label><input type="number" inputmode="numeric" id="d80ccd1b" min="0" placeholder="0"></div>
+            <div class="field"><label>80CCD(2) employer NPS <span class="badge">Both regimes</span></label><input type="number" inputmode="numeric" id="d80ccd2" min="0" placeholder="0"></div>
+            <div class="field"><label>80D health insurance (self+parents)</label><input type="number" inputmode="numeric" id="d80d" min="0" placeholder="0"></div>
+            <div class="field"><label>80DD (disabled dependant)</label><input type="number" inputmode="numeric" id="d80dd" min="0" placeholder="0"></div>
+            <div class="field"><label>80DDB (specified disease)</label><input type="number" inputmode="numeric" id="d80ddb" min="0" placeholder="0"></div>
+            <div class="field"><label>80E education loan interest (no cap)</label><input type="number" inputmode="numeric" id="d80e" min="0" placeholder="0"></div>
+            <div class="field"><label>80EE / 80EEA home loan interest</label><input type="number" inputmode="numeric" id="d80ee" min="0" placeholder="0"></div>
+            <div class="field"><label>80G donations (enter eligible amount)</label><input type="number" inputmode="numeric" id="d80g" min="0" placeholder="0"></div>
+            <div class="field"><label>80GG rent (no HRA)</label><input type="number" inputmode="numeric" id="d80gg" min="0" placeholder="0"></div>
+            <div class="field"><label>80TTA savings interest — cap ₹10,000</label><input type="number" inputmode="numeric" id="d80tta" min="0" placeholder="0"></div>
+            <div class="field"><label>80TTB senior interest — cap ₹50,000</label><input type="number" inputmode="numeric" id="d80ttb" min="0" placeholder="0"></div>
+            <div class="field"><label>80U (self disability)</label><input type="number" inputmode="numeric" id="d80u" min="0" placeholder="0"></div>
+          </div>
+          <div class="subtotal"><span>Total Chapter VI-A deductions (this regime)</span><span id="dedOut">₹0</span></div>
+        </div>
+      </details>
+
+      <!-- H. Taxes paid -->
+      <details class="card">
+        <summary>H. Taxes already paid <span class="chev">&#9654;</span></summary>
+        <div class="body">
+          <div class="grid">
+            <div class="field"><label>TDS</label><input type="number" inputmode="numeric" id="tds" min="0" placeholder="0"></div>
+            <div class="field"><label>TCS</label><input type="number" inputmode="numeric" id="tcs" min="0" placeholder="0"></div>
+            <div class="field"><label>Advance tax</label><input type="number" inputmode="numeric" id="advTax" min="0" placeholder="0"></div>
+            <div class="field"><label>Self-assessment tax</label><input type="number" inputmode="numeric" id="saTax" min="0" placeholder="0"></div>
+          </div>
+          <div class="subtotal"><span>Total taxes paid</span><span id="paidOut">₹0</span></div>
+        </div>
+      </details>
+
+    </div>
+
+    <!-- ============ RIGHT: RESULTS ============ -->
+    <div class="results">
+      <div class="rescard">
+        <h2 style="margin-bottom:6px">Computation summary</h2>
+        <div class="sub" id="resHeader">AY 2026-27 &middot; Compare both</div>
+        <div id="resultBody"></div>
+        <div class="btns no-print">
+          <button class="primary" onclick="window.print()">Print / Save as PDF</button>
+        </div>
+        <div class="muted-note" style="margin-top:10px">Surcharge: &gt;₹50L 10%, &gt;₹1cr 15%, &gt;₹2cr 25%, &gt;₹5cr 37% (New regime capped at 25%). Cess 4%. Marginal relief applied on surcharge &amp; 87A rebate.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================================================================
+   EDIT RATES HERE — verify against incometax.gov.in before filing
+   Every rate/slab/limit the calculator uses lives in TAX_DATA, keyed by
+   Assessment Year. A non-programmer can edit any number here safely.
+   Slabs are cumulative upper bounds: {upto: <ceiling>, rate: <percent>}.
+   ========================================================================= */
+const TAX_DATA = {
+
+  // ---- Common to all years ----
+  common: {
+    cessRate: 4,                    // Health & Education Cess % on (tax + surcharge)
+    surchargeSlabs: [               // applied to income tax (progressive by TOTAL income)
+      { threshold: 5000000,  rate: 10 },   // > 50 lakh
+      { threshold: 10000000, rate: 15 },   // > 1 crore
+      { threshold: 20000000, rate: 25 },   // > 2 crore
+      { threshold: 50000000, rate: 37 }    // > 5 crore
+    ],
+    newRegimeSurchargeCap: 25       // New regime: 37% slab does NOT apply; max 25%
+  },
+
+  "2024-25": {                      // FY 2023-24
+    old: {
+      slabs: {
+        below60: [ {upto:250000,rate:0},{upto:500000,rate:5},{upto:1000000,rate:20},{upto:Infinity,rate:30} ],
+        senior:  [ {upto:300000,rate:0},{upto:500000,rate:5},{upto:1000000,rate:20},{upto:Infinity,rate:30} ],
+        super:   [ {upto:500000,rate:0},{upto:1000000,rate:20},{upto:Infinity,rate:30} ]
+      },
+      stdDeduction: 50000,
+      rebate: { limit: 500000, amount: 12500, marginal: false }
+    },
+    new: {
+      slabs: [ {upto:300000,rate:0},{upto:600000,rate:5},{upto:900000,rate:10},{upto:1200000,rate:15},{upto:1500000,rate:20},{upto:Infinity,rate:30} ],
+      stdDeduction: 50000,
+      rebate: { limit: 700000, amount: 25000, marginal: true }
+    },
+    cg: { ltcgExempt: 100000, otherLTCG: 20, forcePeriod: "pre",
+          rates: { pre:{equitySTCG:15, equityLTCG:10}, post:{equitySTCG:20, equityLTCG:12.5} } }
+  },
+
+  "2025-26": {                      // FY 2024-25
+    old: {
+      slabs: {
+        below60: [ {upto:250000,rate:0},{upto:500000,rate:5},{upto:1000000,rate:20},{upto:Infinity,rate:30} ],
+        senior:  [ {upto:300000,rate:0},{upto:500000,rate:5},{upto:1000000,rate:20},{upto:Infinity,rate:30} ],
+        super:   [ {upto:500000,rate:0},{upto:1000000,rate:20},{upto:Infinity,rate:30} ]
+      },
+      stdDeduction: 50000,
+      rebate: { limit: 500000, amount: 12500, marginal: false }
+    },
+    new: {
+      slabs: [ {upto:300000,rate:0},{upto:700000,rate:5},{upto:1000000,rate:10},{upto:1200000,rate:15},{upto:1500000,rate:20},{upto:Infinity,rate:30} ],
+      stdDeduction: 75000,
+      rebate: { limit: 700000, amount: 25000, marginal: true }
+    },
+    // FY 2024-25 straddles the 23-Jul-2024 rate change → user picks the period
+    cg: { ltcgExempt: 125000, otherLTCG: 20, forcePeriod: null,
+          rates: { pre:{equitySTCG:15, equityLTCG:10}, post:{equitySTCG:20, equityLTCG:12.5} } }
+  },
+
+  "2026-27": {                      // FY 2025-26 (Budget 2025)
+    old: {
+      slabs: {
+        below60: [ {upto:250000,rate:0},{upto:500000,rate:5},{upto:1000000,rate:20},{upto:Infinity,rate:30} ],
+        senior:  [ {upto:300000,rate:0},{upto:500000,rate:5},{upto:1000000,rate:20},{upto:Infinity,rate:30} ],
+        super:   [ {upto:500000,rate:0},{upto:1000000,rate:20},{upto:Infinity,rate:30} ]
+      },
+      stdDeduction: 50000,
+      rebate: { limit: 500000, amount: 12500, marginal: false }
+    },
+    new: {
+      slabs: [ {upto:400000,rate:0},{upto:800000,rate:5},{upto:1200000,rate:10},{upto:1600000,rate:15},{upto:2000000,rate:20},{upto:2400000,rate:25},{upto:Infinity,rate:30} ],
+      stdDeduction: 75000,
+      rebate: { limit: 1200000, amount: 60000, marginal: true }
+    },
+    cg: { ltcgExempt: 125000, otherLTCG: 20, forcePeriod: "post",
+          rates: { pre:{equitySTCG:15, equityLTCG:10}, post:{equitySTCG:20, equityLTCG:12.5} } }
+  }
+};
+
+/* ================= helpers ================= */
+function num(id){ const el=document.getElementById(id); if(!el) return 0; const v=parseFloat(el.value); return isNaN(v)?0:Math.max(v,0); }
+function val(id){ const el=document.getElementById(id); return el?el.value:""; }
+
+function fmtINR(n){
+  n = Math.round(n||0);
+  const neg = n<0; n=Math.abs(n);
+  let s = String(n);
+  let last3 = s.slice(-3);
+  let rest = s.slice(0,-3);
+  if(rest) last3 = ',' + last3;
+  rest = rest.replace(/\B(?=(\d{2})+(?!\d))/g, ',');
+  return (neg?'-₹':'₹') + rest + last3;
+}
+
+// progressive tax on cumulative-ceiling slabs
+function slabTax(income, slabs){
+  let tax=0, prev=0;
+  for(const s of slabs){
+    if(income>prev){
+      const band = Math.min(income, s.upto) - prev;
+      tax += band * s.rate/100;
+      prev = s.upto;
+    } else break;
+  }
+  return tax;
+}
+
+/* ================= core computation for ONE regime ================= */
+function computeRegime(regime){   // regime = 'old' | 'new'
+  const ay = val('ay');
+  const Y = TAX_DATA[ay];
+  const cfg = Y[regime];
+  const age = val('age');
+  const isOld = regime==='old';
+
+  // ---- B. Salary ----
+  const gross = num('grossSalary');
+  const hraExempt = isOld ? computeHRA() : 0;
+  const lta = isOld ? num('lta') : 0;
+  const otherExempt = isOld ? num('otherExempt') : 0;
+  const profTax = isOld ? num('profTax') : 0;
+  const afterExempt = Math.max(0, gross - hraExempt - lta - otherExempt);
+  const std = gross>0 ? Math.min(cfg.stdDeduction, afterExempt) : 0;
+  const salaryIncome = Math.max(0, afterExempt - profTax - std);
+
+  // ---- C. House property ----
+  const hp = computeHP(isOld);
+
+  // ---- E. Business ----
+  const bp = num('bpNet') + num('ad44Digital')*0.06 + num('ad44Cash')*0.08 + num('ada44Gross')*0.50;
+
+  // ---- F. Other sources ----
+  const os = num('osSaving') + num('osFD') + num('osDiv') + num('osOther');
+
+  // ---- D. Capital gains ----
+  const cg = computeCG(Y.cg);
+
+  // Normal (slab-taxable) income before deductions
+  const normalGross = salaryIncome + hp.net + bp + os + cg.otherSTCG;
+
+  // ---- G. Deductions ----
+  const ded = computeDeductions(isOld);
+
+  const normalTaxable = Math.max(0, normalGross - ded);
+  const specialIncome = cg.stcg111aInc + cg.ltcg112aInc + cg.ltcgOtherInc;
+  const totalTaxable = normalTaxable + specialIncome;
+
+  // Gross Total Income (display)
+  const gti = normalGross + specialIncome;
+
+  // ---- Tax on slabs (normal income) ----
+  const slabs = isOld ? cfg.slabs[age] : cfg.slabs;
+  const normalTax = slabTax(normalTaxable, slabs);
+
+  // ---- Special-rate taxes ----
+  const specialTax = cg.stcg111aInc*cg.rSTCG/100 + cg.ltcg112aInc*cg.rLTCG/100 + cg.ltcgOtherInc*Y.cg.otherLTCG/100;
+
+  let taxBeforeRebate = normalTax + specialTax;
+
+  // ---- 87A rebate (applies to normal tax only; excludes special-rate CG tax) ----
+  let rebate = 0;
+  const rb = cfg.rebate;
+  if(totalTaxable <= rb.limit){
+    rebate = Math.min(normalTax, rb.amount);
+  } else if(rb.marginal){
+    const excess = totalTaxable - rb.limit;
+    if(normalTax > excess) rebate = normalTax - excess;   // marginal relief on rebate
+  }
+  const taxAfterRebate = Math.max(0, taxBeforeRebate - rebate);
+
+  // ---- Surcharge (+ marginal relief) ----
+  const sur = computeSurcharge(totalTaxable, taxAfterRebate, regime, slabs, isOld, age, Y, cfg);
+
+  // ---- Cess ----
+  const cess = (taxAfterRebate + sur) * TAX_DATA.common.cessRate/100;
+
+  const totalTax = taxAfterRebate + sur + cess;
+
+  const paid = num('tds')+num('tcs')+num('advTax')+num('saTax');
+  const net = totalTax - paid;   // >0 payable, <0 refund
+
+  return {
+    regime, salaryIncome, hp, bp, os, cg, gti, ded,
+    normalTaxable, specialIncome, totalTaxable,
+    normalTax, specialTax, taxBeforeRebate, rebate, taxAfterRebate,
+    surcharge: sur, cess, totalTax, paid, net,
+    stdDeduction: std, hraExempt
+  };
+}
+
+/* ---- HRA sub-calc (old regime) ---- */
+function computeHRA(){
+  const basic = num('hraBasic'), rec = num('hraReceived'), rent = num('hraRent');
+  const metro = val('hraMetro')==='yes';
+  if(rec<=0 || basic<=0) return 0;
+  const a = rec;
+  const b = Math.max(0, rent - 0.10*basic);
+  const c = (metro?0.50:0.40)*basic;
+  return Math.max(0, Math.min(a,b,c));
+}
+
+/* ---- House property ---- */
+function computeHP(isOld){
+  let total = 0, detail=[];
+  for(const p of ['hp1','hp2']){
+    const type = val(p+'type');
+    if(type==='none' || !type) continue;
+    let net;
+    if(type==='sop'){
+      // NAV = 0; only interest deductible (cap 2L, old only)
+      const interest = isOld ? Math.min(num(p+'int'), 200000) : 0; // new regime: SOP interest not allowed
+      net = -interest;
+    } else { // let-out
+      const nav = Math.max(0, num(p+'rent') - num(p+'mun'));
+      const std30 = nav*0.30;
+      const interest = num(p+'int');
+      net = nav - std30 - interest;
+    }
+    total += net;
+    detail.push({p,type,net});
+  }
+  // Set-off of HP loss against other heads
+  let net = total;
+  if(total < 0){
+    if(!isOld){
+      net = 0;                          // new regime: HP loss not set off vs other heads
+    } else {
+      net = Math.max(total, -200000);   // old regime: cap set-off at 2L
+    }
+  }
+  return { net, raw: total, detail };
+}
+
+/* ---- Capital gains ---- */
+function computeCG(cgCfg){
+  const period = cgCfg.forcePeriod || val('cgPeriod');
+  const r = cgCfg.rates[period];
+  const stcg111aInc = num('stcg111a');
+  const ltcgRaw = num('ltcg112a');
+  const exemptUsed = Math.min(ltcgRaw, cgCfg.ltcgExempt);
+  const ltcg112aInc = Math.max(0, ltcgRaw - cgCfg.ltcgExempt);
+  const otherSTCG = num('stcgOther');       // slab
+  const ltcgOtherInc = num('ltcgOther');    // 20%
+  return {
+    stcg111aInc, ltcg112aInc, ltcgOtherInc, otherSTCG,
+    exemptUsed, rSTCG: r.equitySTCG, rLTCG: r.equityLTCG, period
+  };
+}
+
+/* ---- Chapter VI-A ---- */
+function computeDeductions(isOld){
+  const ccd2 = num('d80ccd2');            // employer NPS — both regimes
+  if(!isOld) return ccd2;
+  const sec80c = Math.min(num('d80c')+num('d80ccc')+num('d80ccd1'), 150000);
+  const ccd1b = Math.min(num('d80ccd1b'), 50000);
+  const d80d = num('d80d');
+  const rest = num('d80dd')+num('d80ddb')+num('d80e')+num('d80ee')+num('d80g')+num('d80gg')
+             + Math.min(num('d80tta'),10000) + Math.min(num('d80ttb'),50000) + num('d80u');
+  return sec80c + ccd1b + ccd2 + d80d + rest;
+}
+
+/* ---- Surcharge with marginal relief ---- */
+function computeSurcharge(totalIncome, baseTax, regime, slabs, isOld, age, Y, cfg){
+  let slabsSur = TAX_DATA.common.surchargeSlabs.slice();
+  if(regime==='new'){
+    // 37% slab does not apply; cap at 25% — drop the >5cr entry so >2cr stays 25%
+    slabsSur = slabsSur.filter(s => s.rate <= TAX_DATA.common.newRegimeSurchargeCap);
+  }
+  // find applicable rate & the threshold just crossed, plus previous rate
+  let rate=0, threshold=0, prevRate=0;
+  for(let i=0;i<slabsSur.length;i++){
+    if(totalIncome > slabsSur[i].threshold){
+      prevRate = rate;
+      rate = slabsSur[i].rate;
+      threshold = slabsSur[i].threshold;
+    }
+  }
+  if(rate===0) return 0;
+
+  let surcharge = baseTax * rate/100;
+
+  // Marginal relief: (tax+surcharge) should not exceed
+  // (tax at threshold + surcharge-at-threshold) + (income - threshold)
+  const taxAtThreshold = slabTax(threshold, slabs); // rebate never applies at these incomes
+  const surAtThreshold = taxAtThreshold * prevRate/100;
+  const allowedMax = taxAtThreshold + surAtThreshold + (totalIncome - threshold);
+  if(baseTax + surcharge > allowedMax){
+    surcharge = Math.max(0, allowedMax - baseTax);
+  }
+  return surcharge;
+}
+
+/* ================= render ================= */
+function render(){
+  syncRegimeUI();
+
+  const ay = val('ay');
+  const regimeSel = val('regime');
+  document.getElementById('resHeader').textContent =
+    'AY '+ay+'  ·  ' + (regimeSel==='compare'?'Compare both':(regimeSel==='new'?'New regime':'Old regime'));
+
+  // subtotal echoes (use whichever regime is primary for display; use 'old' echoes to show HRA etc.)
+  updateEchoes();
+
+  const box = document.getElementById('resultBody');
+
+  if(regimeSel==='compare'){
+    const oldR = computeRegime('old');
+    const newR = computeRegime('new');
+    const oldCheaper = oldR.totalTax <= newR.totalTax;
+    box.innerHTML =
+      '<div class="cmp">' +
+        regimeCol('Old regime', oldR, oldCheaper) +
+        regimeCol('New regime', newR, !oldCheaper) +
+      '</div>' +
+      recoBlock(oldR, newR, oldCheaper) +
+      detailSheet(oldCheaper?oldR:newR, (oldCheaper?'Old':'New')+' regime (cheaper) — full sheet');
+  } else {
+    const R = computeRegime(regimeSel);
+    box.innerHTML = detailSheet(R, (regimeSel==='new'?'New':'Old')+' regime — full sheet') + netPill(R);
+  }
+}
+
+function regimeCol(name, R, win){
+  return '<div class="cmpcol'+(win?' win':'')+'">' +
+    '<h3>'+name+ (win?'<span class="badge">Cheaper</span>':'') +'</h3>' +
+    '<div class="amt">'+fmtINR(R.totalTax)+'</div>' +
+    '<div class="rrow"><span class="lbl">Taxable</span><span>'+fmtINR(R.totalTaxable)+'</span></div>' +
+    '<div class="rrow"><span class="lbl">'+(R.net>=0?'Payable':'Refund')+'</span><span>'+fmtINR(Math.abs(R.net))+'</span></div>' +
+  '</div>';
+}
+
+function recoBlock(oldR, newR, oldCheaper){
+  const saving = Math.abs(oldR.totalTax - newR.totalTax);
+  const winner = oldCheaper?'Old':'New';
+  if(saving<1) return '<div class="reco">Both regimes give the same tax ('+fmtINR(oldR.totalTax)+'). Either works.</div>';
+  return '<div class="reco"><strong>Recommendation:</strong> choose the <strong>'+winner+' regime</strong> — you save <strong>'+fmtINR(saving)+'</strong> in tax vs the other.</div>';
+}
+
+function row(lbl,v,big){ return '<div class="rrow'+(big?' big':'')+'"><span class="lbl">'+lbl+'</span><span>'+v+'</span></div>'; }
+
+function detailSheet(R, title){
+  let h = '<div style="margin-top:12px;font-weight:700">'+title+'</div>';
+  h += row('Income from Salary', fmtINR(R.salaryIncome));
+  h += row('Income from House Property', fmtINR(R.hp.net));
+  h += row('Income from Business/Profession', fmtINR(R.bp));
+  h += row('Income from Other Sources', fmtINR(R.os));
+  h += row('Capital gains (special-rate)', fmtINR(R.specialIncome));
+  h += row('Gross Total Income', fmtINR(R.gti));
+  h += row('Less: Chapter VI-A deductions', '− '+fmtINR(R.ded));
+  h += row('Total (taxable) Income', fmtINR(R.totalTaxable), true);
+  h += row('Tax on slabs (normal income)', fmtINR(R.normalTax));
+  if(R.specialTax>0) h += row('Tax on capital gains (special rates)', fmtINR(R.specialTax));
+  h += row('Tax before rebate', fmtINR(R.taxBeforeRebate));
+  h += row('Less: Rebate u/s 87A', '− '+fmtINR(R.rebate));
+  h += row('Tax after rebate', fmtINR(R.taxAfterRebate));
+  h += row('Add: Surcharge', '+ '+fmtINR(R.surcharge));
+  h += row('Add: Health &amp; Education Cess (4%)', '+ '+fmtINR(R.cess));
+  h += row('Total Tax Liability', fmtINR(R.totalTax), true);
+  h += row('Less: Taxes paid', '− '+fmtINR(R.paid));
+  return h;
+}
+
+function netPill(R){
+  if(R.net > 0.5) return '<div class="pill payable">Balance Payable: '+fmtINR(R.net)+'</div>';
+  if(R.net < -0.5) return '<div class="pill refund">Refund Due: '+fmtINR(-R.net)+'</div>';
+  return '<div class="pill refund">Nil — no tax payable / refund</div>';
+}
+
+/* ---- live subtotal echoes in the input panel ---- */
+function updateEchoes(){
+  document.getElementById('hraExemptOut').textContent = fmtINR(computeHRA());
+  // std deduction + salary shown for the "effective" regime; use new if compare, else selected
+  const regimeSel = val('regime');
+  const forEcho = regimeSel==='old' ? 'old' : 'new';
+  const R = computeRegime(forEcho);
+  document.getElementById('stdDedOut').textContent = fmtINR(R.stdDeduction);
+  document.getElementById('salaryOut').textContent = fmtINR(R.salaryIncome);
+  document.getElementById('hpOut').textContent = fmtINR(R.hp.net);
+  document.getElementById('ad44Out').textContent = fmtINR(num('ad44Digital')*0.06 + num('ad44Cash')*0.08);
+  document.getElementById('ada44Out').textContent = fmtINR(num('ada44Gross')*0.50);
+  document.getElementById('bpOut').textContent = fmtINR(R.bp);
+  document.getElementById('osOut').textContent = fmtINR(R.os);
+  document.getElementById('dedOut').textContent = fmtINR(R.ded);
+  document.getElementById('paidOut').textContent = fmtINR(num('tds')+num('tcs')+num('advTax')+num('saTax'));
+  // CG exemption echo
+  const Y = TAX_DATA[val('ay')];
+  document.getElementById('ltcgExemptOut').textContent = fmtINR(Math.min(num('ltcg112a'), Y.cg.ltcgExempt));
+}
+
+/* ---- toggle old-only fields + CG period per AY ---- */
+function syncRegimeUI(){
+  const ay = val('ay');
+  const Y = TAX_DATA[ay];
+  const regimeSel = val('regime');
+  // Old-only sections dimmed when purely New regime selected
+  const dim = regimeSel==='new';
+  document.querySelectorAll('.oldonly').forEach(el=>{ el.style.opacity = dim?0.5:1; });
+
+  // CG period selector: only editable when the year straddles the rate change
+  const cgSel = document.getElementById('cgPeriod');
+  const help = document.getElementById('cgPeriodHelp');
+  if(Y.cg.forcePeriod){
+    cgSel.value = Y.cg.forcePeriod;
+    cgSel.disabled = true;
+    help.textContent = Y.cg.forcePeriod==='pre'
+      ? 'Fixed for this year: equity STCG 15%, LTCG 10%.'
+      : 'Fixed for this year: equity STCG 20%, LTCG 12.5%.';
+  } else {
+    cgSel.disabled = false;
+    help.textContent = 'This FY straddles 23-Jul-2024 — pick the transfer period for your equity gains.';
+  }
+
+  // NRI note
+  const st = val('status');
+  const nn = document.getElementById('nriNote');
+  if(st==='nri') nn.textContent = 'Note: Non-residents cannot claim the 87A rebate and basic-exemption benefits differ. This estimator still applies slab rates; verify NRI-specific rules.';
+  else if(st==='rnor') nn.textContent = 'RNOR: only India-sourced / India-received income is taxable. Enter only taxable amounts.';
+  else nn.textContent = '';
+}
+
+/* ---- wire up live recalculation ---- */
+document.getElementById('inputs').addEventListener('input', render);
+document.getElementById('inputs').addEventListener('change', render);
+render();
+</script>

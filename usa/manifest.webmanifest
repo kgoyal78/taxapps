@@ -1,0 +1,20 @@
+{
+  "name": "US Federal + Indiana Tax Calculator",
+  "short_name": "US/IN Tax",
+  "description": "Guided US Federal and Indiana state income tax estimator with smart suggestions. Educational only.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0f141c",
+  "theme_color": "#1d4fd0",
+  "categories": ["finance", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any maskable"
+    }
+  ]
+}
