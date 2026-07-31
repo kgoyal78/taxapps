@@ -181,7 +181,7 @@
   <div class="apphead no-print">
     <div>
       <h1>India Individual Income Tax Calculator</h1>
-      <div class="sub">Guided &middot; Old &amp; New regime &middot; AY 2024-25 / 2025-26 / 2026-27</div>
+      <div class="sub">Guided &middot; Old &amp; New regime &middot; AY 2021-22 &rarr; AY 2026-27</div>
     </div>
     <div class="headbtns">
       <button class="hbtn" id="valBadge" type="button">Checks</button>
@@ -222,6 +222,9 @@
                 <option value="2026-27" selected>AY 2026-27 (FY 2025-26)</option>
                 <option value="2025-26">AY 2025-26 (FY 2024-25)</option>
                 <option value="2024-25">AY 2024-25 (FY 2023-24)</option>
+                <option value="2023-24">AY 2023-24 (FY 2022-23)</option>
+                <option value="2022-23">AY 2022-23 (FY 2021-22)</option>
+                <option value="2021-22">AY 2021-22 (FY 2020-21)</option>
               </select>
             </div>
             <div class="field">
@@ -496,6 +499,68 @@ const TAX_DATA = {
     },
     cg: { ltcgExempt: 100000, otherLTCG: 20, forcePeriod: "pre",
           rates: { pre:{equitySTCG:15, equityLTCG:10}, post:{equitySTCG:20, equityLTCG:12.5} } }
+  },
+
+  // ---- Older back-years (fully before 23-Jul-2024): single pre-2024 CG rates ----
+  // NOTE (surcharge): the New-regime surcharge cap for these years was 37% (not 25%),
+  // but that only bites above ₹5 crore of income; we leave the shared 25% New-regime
+  // cap in common.newRegimeSurchargeCap unchanged — a minor limitation for >₹5cr only.
+  "2023-24": {                      // FY 2022-23
+    old: {
+      slabs: {
+        below60: [ {upto:250000,rate:0},{upto:500000,rate:5},{upto:1000000,rate:20},{upto:Infinity,rate:30} ],
+        senior:  [ {upto:300000,rate:0},{upto:500000,rate:5},{upto:1000000,rate:20},{upto:Infinity,rate:30} ],
+        super:   [ {upto:500000,rate:0},{upto:1000000,rate:20},{upto:Infinity,rate:30} ]
+      },
+      stdDeduction: 50000,
+      rebate: { limit: 500000, amount: 12500, marginal: false }
+    },
+    new: {
+      // Old 115BAC structure (pre FY 2023-24 revamp): 6 rate bands, no std deduction, no ₹7L rebate
+      slabs: [ {upto:250000,rate:0},{upto:500000,rate:5},{upto:750000,rate:10},{upto:1000000,rate:15},{upto:1250000,rate:20},{upto:1500000,rate:25},{upto:Infinity,rate:30} ],
+      stdDeduction: 0,
+      rebate: { limit: 500000, amount: 12500, marginal: false }
+    },
+    cg: { ltcgExempt: 100000, otherLTCG: 20, forcePeriod: "pre",
+          rates: { pre:{equitySTCG:15, equityLTCG:10}, post:{equitySTCG:15, equityLTCG:10} } }
+  },
+
+  "2022-23": {                      // FY 2021-22
+    old: {
+      slabs: {
+        below60: [ {upto:250000,rate:0},{upto:500000,rate:5},{upto:1000000,rate:20},{upto:Infinity,rate:30} ],
+        senior:  [ {upto:300000,rate:0},{upto:500000,rate:5},{upto:1000000,rate:20},{upto:Infinity,rate:30} ],
+        super:   [ {upto:500000,rate:0},{upto:1000000,rate:20},{upto:Infinity,rate:30} ]
+      },
+      stdDeduction: 50000,
+      rebate: { limit: 500000, amount: 12500, marginal: false }
+    },
+    new: {
+      slabs: [ {upto:250000,rate:0},{upto:500000,rate:5},{upto:750000,rate:10},{upto:1000000,rate:15},{upto:1250000,rate:20},{upto:1500000,rate:25},{upto:Infinity,rate:30} ],
+      stdDeduction: 0,
+      rebate: { limit: 500000, amount: 12500, marginal: false }
+    },
+    cg: { ltcgExempt: 100000, otherLTCG: 20, forcePeriod: "pre",
+          rates: { pre:{equitySTCG:15, equityLTCG:10}, post:{equitySTCG:15, equityLTCG:10} } }
+  },
+
+  "2021-22": {                      // FY 2020-21
+    old: {
+      slabs: {
+        below60: [ {upto:250000,rate:0},{upto:500000,rate:5},{upto:1000000,rate:20},{upto:Infinity,rate:30} ],
+        senior:  [ {upto:300000,rate:0},{upto:500000,rate:5},{upto:1000000,rate:20},{upto:Infinity,rate:30} ],
+        super:   [ {upto:500000,rate:0},{upto:1000000,rate:20},{upto:Infinity,rate:30} ]
+      },
+      stdDeduction: 50000,
+      rebate: { limit: 500000, amount: 12500, marginal: false }
+    },
+    new: {
+      slabs: [ {upto:250000,rate:0},{upto:500000,rate:5},{upto:750000,rate:10},{upto:1000000,rate:15},{upto:1250000,rate:20},{upto:1500000,rate:25},{upto:Infinity,rate:30} ],
+      stdDeduction: 0,
+      rebate: { limit: 500000, amount: 12500, marginal: false }
+    },
+    cg: { ltcgExempt: 100000, otherLTCG: 20, forcePeriod: "pre",
+          rates: { pre:{equitySTCG:15, equityLTCG:10}, post:{equitySTCG:15, equityLTCG:10} } }
   },
 
   "2025-26": {                      // FY 2024-25

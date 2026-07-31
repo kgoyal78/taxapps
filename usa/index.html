@@ -201,7 +201,7 @@ table.sheet tr.big td{font-size:1rem;font-weight:700}
 <div class="wrap" id="app">
 
   <h1><img class="logo" src="icon.svg" alt=""> US Federal + Indiana Tax Calculator</h1>
-  <p class="sub">Guided estimator · tax years 2023–2025 · IRS + Indiana DOR</p>
+  <p class="sub">Guided estimator · tax years 2021–2025 · IRS + Indiana DOR</p>
 
   <div class="actions noprint">
     <button class="tool ghost sm" id="btnView" type="button">Switch to single-page view</button>
@@ -246,9 +246,11 @@ table.sheet tr.big td{font-size:1rem;font-weight:700}
         <div class="field">
           <label>Tax Year <span class="qmark" data-tip="The calendar year you're filing for. 2025 figures are inflation-projected and provisional.">?</span></label>
           <select id="year">
-            <option value="2023">2023</option>
-            <option value="2024" selected>2024</option>
             <option value="2025">2025 (provisional)</option>
+            <option value="2024" selected>2024</option>
+            <option value="2023">2023</option>
+            <option value="2022">2022</option>
+            <option value="2021">2021</option>
           </select>
         </div>
         <div class="field">
@@ -494,6 +496,36 @@ const TAX_DATA = {
     ltcg: { single:[48350,533400], mfj:[96700,600050], qss:[96700,600050], hoh:[64750,566700], mfs:[48350,300000] },
     ssWageBase: 176100,
     indiana: { stateRate:0.0300 }  // Indiana flat rate 2025 = 3.00% (PROVISIONAL)
+  },
+  2022: {
+    provisional: false,
+    standardDeduction: { single:12950, mfj:25900, mfs:12950, hoh:19400, qss:25900 },
+    addlStdDeduction: { single:1750, hoh:1750, mfj:1400, mfs:1400, qss:1400 },
+    brackets: {
+      single:[[10275,.10],[41775,.12],[89075,.22],[170050,.24],[215950,.32],[539900,.35],[Infinity,.37]],
+      mfj:   [[20550,.10],[83550,.12],[178150,.22],[340100,.24],[431900,.32],[647850,.35],[Infinity,.37]],
+      qss:   [[20550,.10],[83550,.12],[178150,.22],[340100,.24],[431900,.32],[647850,.35],[Infinity,.37]],
+      mfs:   [[10275,.10],[41775,.12],[89075,.22],[170050,.24],[215950,.32],[323925,.35],[Infinity,.37]],
+      hoh:   [[14650,.10],[55900,.12],[89050,.22],[170050,.24],[215950,.32],[539900,.35],[Infinity,.37]]
+    },
+    ltcg: { single:[41675,459750], mfj:[83350,517200], qss:[83350,517200], hoh:[55800,488500], mfs:[41675,258600] },
+    ssWageBase: 147000,
+    indiana: { stateRate:0.0323 }  // Indiana flat rate 2022 = 3.23%
+  },
+  2021: {
+    provisional: false,
+    standardDeduction: { single:12550, mfj:25100, mfs:12550, hoh:18800, qss:25100 },
+    addlStdDeduction: { single:1700, hoh:1700, mfj:1350, mfs:1350, qss:1350 },
+    brackets: {
+      single:[[9950,.10],[40525,.12],[86375,.22],[164925,.24],[209425,.32],[523600,.35],[Infinity,.37]],
+      mfj:   [[19900,.10],[81050,.12],[172750,.22],[329850,.24],[418850,.32],[628300,.35],[Infinity,.37]],
+      qss:   [[19900,.10],[81050,.12],[172750,.22],[329850,.24],[418850,.32],[628300,.35],[Infinity,.37]],
+      mfs:   [[9950,.10],[40525,.12],[86375,.22],[164925,.24],[209425,.32],[314150,.35],[Infinity,.37]],
+      hoh:   [[14200,.10],[54200,.12],[86350,.22],[164900,.24],[209400,.32],[523600,.35],[Infinity,.37]]
+    },
+    ltcg: { single:[40400,445850], mfj:[80800,501600], qss:[80800,501600], hoh:[54100,473750], mfs:[40400,250800] },
+    ssWageBase: 142800,
+    indiana: { stateRate:0.0323 }  // Indiana flat rate 2021 = 3.23%
   }
 };
 
